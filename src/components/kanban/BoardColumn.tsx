@@ -120,11 +120,11 @@ export function BoardColumn({
     <Card
       ref={setNodeRef}
       style={style}
-      className={variants({
+      className={` ${variants({
         dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
-      })}
+      })}`}
     >
-      <CardHeader className="p-4 font-semibold border-b-2 flex flex-row items-center">
+      <CardHeader className="group p-4 font-semibold border-b-2 flex flex-row items-center">
         <div className="flex items-center flex-1 justify-between">
           <div className="flex items-center flex-1 ">
             <Button
@@ -160,7 +160,7 @@ export function BoardColumn({
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsEditing(true)}
-                  className="h-8 w-8 ml-2"
+                  className="hidden group-hover:flex h-8 w-8 ml-2"
                 >
                   <Pencil className="h-4 w-4" />
                   <span className="sr-only">Edit column title</span>
@@ -173,7 +173,11 @@ export function BoardColumn({
             onOpenChange={setIsDeleteDialogOpen}
           >
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden group-hover:flex h-8 w-8"
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
