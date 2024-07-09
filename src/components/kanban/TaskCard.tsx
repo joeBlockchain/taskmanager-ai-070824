@@ -81,7 +81,7 @@ export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
               <span className="sr-only">Move task</span>
               <GripVertical />
             </Button>
-            <span className="">{task.title}</span>
+            <span className="text-lg">{task.title}</span>
           </div>
           <Button
             variant="ghost"
@@ -94,7 +94,7 @@ export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="px-3 pt-3 pb-6 text-left whitespace-pre-wrap">
+      <CardContent className="px-3 pt-3 pb-6 text-left whitespace-pre-wrap text-muted-foreground">
         {task.content}
       </CardContent>
     </Card>

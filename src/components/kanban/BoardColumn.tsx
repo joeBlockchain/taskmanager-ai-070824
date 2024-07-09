@@ -6,8 +6,21 @@ import { Task, TaskCard } from "./TaskCard";
 import { cva } from "class-variance-authority";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, PlusIcon } from "lucide-react";
+import { GripVertical, PlusIcon, Trash2 } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 export interface Column {
   id: UniqueIdentifier;
@@ -27,6 +40,7 @@ interface BoardColumnProps {
   isOverlay?: boolean;
   onAddTask: (columnId: UniqueIdentifier) => void;
   onDeleteTask: (taskId: UniqueIdentifier) => void;
+  onDeleteColumn: (columnId: UniqueIdentifier, tasks: Task[]) => void;
 }
 
 export function BoardColumn({
@@ -35,7 +49,10 @@ export function BoardColumn({
   isOverlay,
   onAddTask,
   onDeleteTask,
+  onDeleteColumn,
 }: BoardColumnProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const tasksIds = useMemo(() => {
     return tasks.map((task) => task.id);
   }, [tasks]);
@@ -85,17 +102,57 @@ export function BoardColumn({
       })}
     >
       <CardHeader className="p-4 font-semibold border-b-2 flex flex-row items-center">
-        <Button
-          variant={"ghost"}
-          {...attributes}
-          {...listeners}
-          className="p-1 text-primary/50 -ml-2 h-auto cursor-grab relative"
-        >
-          <span className="sr-only">{`Move column: ${column.title}`}</span>
-          <GripVertical />
-        </Button>
-        <div className="items-start justify-start text-start">
-          {column.title}
+        <div className="flex items-center flex-1 justify-between">
+          <div className="flex items-center flex-1 ">
+            <Button
+              variant={"ghost"}
+              {...attributes}
+              {...listeners}
+              className="p-1 text-primary/50 -ml-2 h-auto cursor-grab relative"
+            >
+              <span className="sr-only">{`Move column: ${column.title}`}</span>
+              <GripVertical />
+            </Button>
+            <div className="items-start justify-start text-start text-xl">
+              {column.title}
+            </div>
+          </div>
+          <AlertDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+          >
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Are you sure you want to delete this column?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will delete the following tasks:
+                  <ul className="list-disc pl-5 mt-2">
+                    {tasks.map((task) => (
+                      <li key={task.id}>{task.title}</li>
+                    ))}
+                  </ul>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    onDeleteColumn(column.id, tasks);
+                    setIsDeleteDialogOpen(false);
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardHeader>
       <ScrollArea>

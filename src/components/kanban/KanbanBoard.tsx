@@ -254,6 +254,13 @@ export function KanbanBoard() {
     setColumns([...columns, newColumn]);
   };
 
+  const deleteColumn = (columnId: UniqueIdentifier, tasksToDelete: Task[]) => {
+    setColumns(columns.filter((col) => col.id !== columnId));
+    setTasks(
+      tasks.filter((task) => !tasksToDelete.some((t) => t.id === task.id))
+    );
+  };
+
   const addTask = (columnId: UniqueIdentifier) => {
     const newTask: Task = {
       id: `task-${Date.now()}`,
@@ -288,6 +295,7 @@ export function KanbanBoard() {
                 tasks={tasks.filter((task) => task.columnId === col.id)}
                 onAddTask={addTask}
                 onDeleteTask={deleteTask}
+                onDeleteColumn={deleteColumn}
               />
             ))}
           </SortableContext>
@@ -313,6 +321,7 @@ export function KanbanBoard() {
                   )}
                   onAddTask={addTask}
                   onDeleteTask={deleteTask}
+                  onDeleteColumn={deleteColumn}
                 />
               )}
               {activeTask && (
