@@ -43,6 +43,7 @@ interface BoardColumnProps {
   onDeleteTask: (taskId: UniqueIdentifier) => void;
   onDeleteColumn: (columnId: UniqueIdentifier, tasks: Task[]) => void;
   onUpdateColumn: (columnId: UniqueIdentifier, newTitle: string) => void;
+  onUpdateTask: (taskId: UniqueIdentifier, updatedTask: Partial<Task>) => void;
 }
 
 export function BoardColumn({
@@ -53,6 +54,7 @@ export function BoardColumn({
   onDeleteTask,
   onDeleteColumn,
   onUpdateColumn,
+  onUpdateTask,
 }: BoardColumnProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -211,7 +213,8 @@ export function BoardColumn({
               <TaskCard
                 key={task.id}
                 task={task}
-                onDelete={onDeleteTask} // Pass onDeleteTask here
+                onDelete={onDeleteTask}
+                onUpdate={onUpdateTask}
               />
             ))}
           </SortableContext>

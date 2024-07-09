@@ -279,6 +279,14 @@ export function KanbanBoard() {
     setTasks([...tasks, newTask]);
   };
 
+  const updateTask = (taskId: UniqueIdentifier, updatedTask: Partial<Task>) => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === taskId ? { ...task, ...updatedTask } : task
+      )
+    );
+  };
+
   const deleteTask = (taskId: UniqueIdentifier) => {
     setTasks(tasks.filter((task) => task.id !== taskId));
   };
@@ -303,6 +311,7 @@ export function KanbanBoard() {
                 tasks={tasks.filter((task) => task.columnId === col.id)}
                 onAddTask={addTask}
                 onDeleteTask={deleteTask}
+                onUpdateTask={updateTask}
                 onDeleteColumn={deleteColumn}
                 onUpdateColumn={updateColumn}
               />
@@ -332,10 +341,16 @@ export function KanbanBoard() {
                   onDeleteTask={deleteTask}
                   onDeleteColumn={deleteColumn}
                   onUpdateColumn={updateColumn}
+                  onUpdateTask={updateTask}
                 />
               )}
               {activeTask && (
-                <TaskCard task={activeTask} isOverlay onDelete={deleteTask} />
+                <TaskCard
+                  task={activeTask}
+                  isOverlay
+                  onDelete={deleteTask}
+                  onUpdate={updateTask}
+                />
               )}
             </DragOverlay>,
             document.body
