@@ -22,7 +22,7 @@ export function SiteHeader() {
           <nav className="flex items-center gap-2">
             <Button asChild variant="ghost" size="icon" className="h-9 w-9">
               <Link
-                href="#"
+                href="https://github.com/joeBlockchain/taskmanager-ai-070824"
                 prefetch={false}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -43,7 +43,7 @@ export function SiteHeader() {
             </Button>
             <Button asChild variant="ghost" size="icon" className="h-9 w-9">
               <Link
-                href="#"
+                href="https://twitter.com/JoeTaylor_86753"
                 prefetch={false}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -64,7 +64,7 @@ export function SiteHeader() {
             </Button>
             <Button asChild variant="ghost" size="icon" className="h-9 w-9">
               <Link
-                href="#"
+                href="https://medium.com/@learningsomethingnew"
                 prefetch={false}
                 target="_blank"
                 rel="noopener noreferrer"
