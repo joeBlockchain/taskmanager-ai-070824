@@ -6,7 +6,7 @@ import { Task, TaskCard } from "./TaskCard";
 import { cva } from "class-variance-authority";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GripVertical, PlusIcon, Trash2 } from "lucide-react";
+import { GripVertical, Pencil, PlusIcon, Trash2 } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 import {
@@ -20,7 +20,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Input } from "../ui/input";
 
 export interface Column {
   id: UniqueIdentifier;
@@ -41,6 +42,7 @@ interface BoardColumnProps {
   onAddTask: (columnId: UniqueIdentifier) => void;
   onDeleteTask: (taskId: UniqueIdentifier) => void;
   onDeleteColumn: (columnId: UniqueIdentifier, tasks: Task[]) => void;
+  onUpdateColumn: (columnId: UniqueIdentifier, newTitle: string) => void;
 }
 
 export function BoardColumn({
@@ -50,8 +52,12 @@ export function BoardColumn({
   onAddTask,
   onDeleteTask,
   onDeleteColumn,
+  onUpdateColumn,
 }: BoardColumnProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(column.title);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const tasksIds = useMemo(() => {
     return tasks.map((task) => task.id);
@@ -93,6 +99,21 @@ export function BoardColumn({
     }
   );
 
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+    }
+  }, [isEditing]);
+
+  const handleEditComplete = () => {
+    if (editedTitle.trim() !== "") {
+      onUpdateColumn(column.id, editedTitle.trim());
+    } else {
+      setEditedTitle(column.title);
+    }
+    setIsEditing(false);
+  };
+
   return (
     <Card
       ref={setNodeRef}
@@ -113,9 +134,37 @@ export function BoardColumn({
               <span className="sr-only">{`Move column: ${column.title}`}</span>
               <GripVertical />
             </Button>
-            <div className="items-start justify-start text-start text-xl">
-              {column.title}
-            </div>
+
+            {isEditing ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleEditComplete();
+                }}
+                className="flex-1"
+              >
+                <Input
+                  ref={inputRef}
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onBlur={handleEditComplete}
+                  className="h-7 px-2 text-base"
+                />
+              </form>
+            ) : (
+              <div className="flex items-center justify-between flex-1">
+                <span className="text-xl">{column.title}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsEditing(true)}
+                  className="h-8 w-8 ml-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  <span className="sr-only">Edit column title</span>
+                </Button>
+              </div>
+            )}
           </div>
           <AlertDialog
             open={isDeleteDialogOpen}
