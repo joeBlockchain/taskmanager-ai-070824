@@ -21,6 +21,8 @@ import { type Task, TaskCard } from "./TaskCard";
 import type { Column } from "./BoardColumn";
 import { hasDraggableData } from "./utils";
 import { coordinateGetter } from "./multipleContainersKeyboardPreset";
+import { Button } from "../ui/button";
+import { PlusIcon } from "lucide-react";
 
 const defaultCols = [
   {
@@ -231,6 +233,27 @@ export function KanbanBoard() {
     },
   };
 
+  const addColumn = () => {
+    const newColumn: Column = {
+      id: `column-${Date.now()}`,
+      title: `New Column ${columns.length + 1}`,
+    };
+    setColumns([...columns, newColumn]);
+  };
+
+  const addTask = (columnId: UniqueIdentifier) => {
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      columnId: columnId as ColumnId,
+      content: `New Task ${tasks.length + 1}`,
+    };
+    setTasks([...tasks, newTask]);
+  };
+
+  const deleteTask = (taskId: UniqueIdentifier) => {
+    setTasks(tasks.filter((task) => task.id !== taskId));
+  };
+
   return (
     <div className="">
       <DndContext
@@ -249,9 +272,19 @@ export function KanbanBoard() {
                 key={col.id}
                 column={col}
                 tasks={tasks.filter((task) => task.columnId === col.id)}
+                onAddTask={addTask}
+                onDeleteTask={deleteTask}
               />
             ))}
           </SortableContext>
+          <Button
+            onClick={addColumn}
+            className="w-[350px] h-[65px] justify-start"
+            variant="outline"
+          >
+            <PlusIcon className="mr-2 h-4 " />
+            <span className="text-base">Add Column</span>
+          </Button>
         </BoardContainer>
 
         {"document" in window &&
@@ -264,9 +297,13 @@ export function KanbanBoard() {
                   tasks={tasks.filter(
                     (task) => task.columnId === activeColumn.id
                   )}
+                  onAddTask={addTask}
+                  onDeleteTask={deleteTask}
                 />
               )}
-              {activeTask && <TaskCard task={activeTask} isOverlay />}
+              {activeTask && (
+                <TaskCard task={activeTask} isOverlay onDelete={deleteTask} />
+              )}
             </DragOverlay>,
             document.body
           )}

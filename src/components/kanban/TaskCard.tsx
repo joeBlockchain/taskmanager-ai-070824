@@ -4,7 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cva } from "class-variance-authority";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ColumnId } from "./KanbanBoard";
 
@@ -17,6 +17,7 @@ export interface Task {
 interface TaskCardProps {
   task: Task;
   isOverlay?: boolean;
+  onDelete: (taskId: UniqueIdentifier) => void;
 }
 
 export type TaskType = "Task";
@@ -26,7 +27,7 @@ export interface TaskDragData {
   task: Task;
 }
 
-export function TaskCard({ task, isOverlay }: TaskCardProps) {
+export function TaskCard({ task, isOverlay, onDelete }: TaskCardProps) {
   const {
     setNodeRef,
     attributes,
@@ -67,7 +68,7 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
         dragging: isOverlay ? "overlay" : isDragging ? "over" : undefined,
       })}
     >
-      <CardHeader className="px-3 py-3 space-between flex flex-row border-b-2 border-secondary relative">
+      <CardHeader className="px-3 py-3 justify-between first-letter:flex flex-row border-b-2 border-secondary">
         <Button
           variant={"ghost"}
           {...attributes}
@@ -77,9 +78,15 @@ export function TaskCard({ task, isOverlay }: TaskCardProps) {
           <span className="sr-only">Move task</span>
           <GripVertical />
         </Button>
-        <Badge variant={"outline"} className="ml-auto font-semibold">
-          Task
-        </Badge>
+        <Button
+          variant="ghost"
+          size="icon"
+          className=""
+          onClick={() => onDelete(task.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+          <span className="sr-only">Delete task</span>
+        </Button>
       </CardHeader>
       <CardContent className="px-3 pt-3 pb-6 text-left whitespace-pre-wrap">
         {task.content}
