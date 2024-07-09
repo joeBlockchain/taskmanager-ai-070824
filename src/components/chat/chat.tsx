@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "../ui/textarea";
 import { CornerRightUp, CopyIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -18,6 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SignInButton } from "@clerk/nextjs";
+import FileItem from "./file-item";
 
 interface Message {
   role: "user" | "assistant";
@@ -85,6 +93,7 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showSignInButton, setShowSignInButton] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
   useEffect(() => {
     scrollToBottom();
@@ -102,9 +111,22 @@ export default function Chat() {
     }, 0);
   }, [messages]);
 
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setAttachedFiles((prev) => [...prev, ...acceptedFiles]);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    multiple: true,
+  });
+
+  const handleRemoveFile = (fileToRemove: File) => {
+    setAttachedFiles((prev) => prev.filter((file) => file !== fileToRemove));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() && attachedFiles.length === 0) return;
 
     setIsLoading(true);
     const userMessage: Message = { role: "user", content: inputMessage };
@@ -112,13 +134,14 @@ export default function Chat() {
     setMessages(updatedMessages);
     setInputMessage("");
 
+    const formData = new FormData();
+    formData.append("messages", JSON.stringify(updatedMessages));
+    attachedFiles.forEach((file) => formData.append("files", file));
+
     try {
-      const res = await fetch("/api/anthropic", {
+      const res = await fetch("/api/claude", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: updatedMessages }),
+        body: formData,
       });
 
       if (res.status === 401) {
@@ -205,12 +228,13 @@ export default function Chat() {
       }
     } finally {
       setIsLoading(false);
+      setAttachedFiles([]);
     }
   };
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] p-4 max-w-3xl mx-auto">
-      {/* {messages.length === 0 && <PromptSuggestions />} */}
+      {messages.length === 0 && <PromptSuggestions />}
       <div className="flex-grow overflow-y-auto mb-4 pb-4">
         {messages.map((message, index) => (
           <div
@@ -331,23 +355,60 @@ export default function Chat() {
             Total Chat Cost: ${totalChatCost.toFixed(4)}
           </div>
         )}
-        <form onSubmit={handleSubmit} className="flex space-x-2">
-          <Textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message here"
-            disabled={isLoading}
-            className="relative flex-grow pr-[3.75rem]"
-          />
-          <Button
-            size="icon"
-            variant="secondary"
-            type="submit"
-            disabled={isLoading}
-            className="absolute right-[.5rem] bottom-[2rem]"
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-2">
+          <div
+            {...getRootProps()}
+            className={`relative border-2 border-dashed p-4 rounded-md text-center ${
+              attachedFiles.length === 0 ? "min-h-[2rem]" : "min-h-[12rem]"
+            } ${
+              isDragActive
+                ? "  border-blue-500  dark:border-blue-900"
+                : "text-muted-foreground"
+            }`}
           >
-            {isLoading ? "Sending..." : <CornerRightUp className="w-5 h-5" />}
-          </Button>
+            <input {...getInputProps()} />
+            {attachedFiles.length === 0 && (
+              <p>
+                {isDragActive ? (
+                  <p className="text-muted-foreground">
+                    Yum, yum... gimme some files!
+                  </p>
+                ) : (
+                  "Drag n drop files here, or click to select"
+                )}
+              </p>
+            )}
+            <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-wrap content-start gap-4 p-4 overflow-auto">
+              {attachedFiles.map((file, index) => (
+                <FileItem
+                  key={`${file.name}-${index}`}
+                  file={file}
+                  onRemove={handleRemoveFile}
+                />
+              ))}
+            </div>
+            {attachedFiles.length > 0 && (
+              <div className="absolute bottom-2 left-0 right-0 text-center"></div>
+            )}
+          </div>
+          <div className="flex space-x-2">
+            <Textarea
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Type your message here"
+              disabled={isLoading}
+              className="relative flex-grow pr-[3.75rem]"
+            />
+            <Button
+              size="icon"
+              variant="secondary"
+              type="submit"
+              disabled={isLoading}
+              className="absolute right-[.5rem] bottom-[2rem]"
+            >
+              {isLoading ? "Sending..." : <CornerRightUp className="w-5 h-5" />}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
