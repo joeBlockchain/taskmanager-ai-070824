@@ -2,10 +2,21 @@ import { useState } from "react";
 import type { UniqueIdentifier } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cva } from "class-variance-authority";
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  GripVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 import { ColumnId } from "./KanbanBoard";
 import {
@@ -34,6 +45,9 @@ interface TaskCardProps {
   isOverlay?: boolean;
   onDelete: (taskId: UniqueIdentifier) => void;
   onUpdate: (taskId: UniqueIdentifier, updatedTask: Partial<Task>) => void;
+  onBump: (taskId: UniqueIdentifier, direction: "left" | "right") => void;
+  isLeftmostColumn: boolean;
+  isRightmostColumn: boolean;
 }
 
 export type TaskType = "Task";
@@ -48,6 +62,9 @@ export function TaskCard({
   isOverlay,
   onDelete,
   onUpdate,
+  onBump,
+  isLeftmostColumn,
+  isRightmostColumn,
 }: TaskCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task.title);
@@ -184,6 +201,26 @@ export function TaskCard({
       <CardContent className="px-3 pt-3 pb-6 text-left whitespace-pre-wrap text-muted-foreground">
         {task.content}
       </CardContent>
+      <CardFooter className="h-10 px-1 py-1 my-0 border-t border-border justify-between">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 hidden group-hover/task:flex"
+          onClick={() => onBump(task.id, "left")}
+          disabled={isLeftmostColumn}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 hidden group-hover/task:flex"
+          onClick={() => onBump(task.id, "right")}
+          disabled={isRightmostColumn}
+        >
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

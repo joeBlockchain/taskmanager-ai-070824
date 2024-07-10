@@ -44,6 +44,9 @@ interface BoardColumnProps {
   onDeleteColumn: (columnId: UniqueIdentifier, tasks: Task[]) => void;
   onUpdateColumn: (columnId: UniqueIdentifier, newTitle: string) => void;
   onUpdateTask: (taskId: UniqueIdentifier, updatedTask: Partial<Task>) => void;
+  onBumpTask: (taskId: UniqueIdentifier, direction: "left" | "right") => void;
+  isLeftmostColumn: boolean;
+  isRightmostColumn: boolean;
 }
 
 export function BoardColumn({
@@ -55,6 +58,9 @@ export function BoardColumn({
   onDeleteColumn,
   onUpdateColumn,
   onUpdateTask,
+  onBumpTask,
+  isLeftmostColumn,
+  isRightmostColumn,
 }: BoardColumnProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -219,6 +225,9 @@ export function BoardColumn({
                 task={task}
                 onDelete={onDeleteTask}
                 onUpdate={onUpdateTask}
+                onBump={onBumpTask}
+                isLeftmostColumn={isLeftmostColumn}
+                isRightmostColumn={isRightmostColumn}
               />
             ))}
           </SortableContext>

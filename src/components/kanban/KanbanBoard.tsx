@@ -291,6 +291,48 @@ export function KanbanBoard() {
     setTasks(tasks.filter((task) => task.id !== taskId));
   };
 
+  const bumpTask = (taskId: UniqueIdentifier, direction: "left" | "right") => {
+    setTasks((prevTasks) => {
+      const taskIndex = prevTasks.findIndex((task) => task.id === taskId);
+      if (taskIndex === -1) return prevTasks;
+
+      const task = prevTasks[taskIndex];
+      const currentColumnIndex = columns.findIndex(
+        (col) => col.id === task.columnId
+      );
+
+      if (
+        (direction === "left" && currentColumnIndex === 0) ||
+        (direction === "right" && currentColumnIndex === columns.length - 1)
+      ) {
+        return prevTasks;
+      }
+
+      const newColumnId =
+        columns[currentColumnIndex + (direction === "left" ? -1 : 1)].id;
+
+      // Remove the task from its current position
+      const updatedTasks = prevTasks.filter((t) => t.id !== taskId);
+
+      // Create the updated task with the new column ID
+      const updatedTask = { ...task, columnId: newColumnId as ColumnId };
+
+      // Find the index to insert the task at the top of the new column
+      const insertIndex = updatedTasks.findIndex(
+        (t) => t.columnId === newColumnId
+      );
+
+      // Insert the task at the found index (or at the beginning if no tasks in the column)
+      if (insertIndex === -1) {
+        updatedTasks.push(updatedTask);
+      } else {
+        updatedTasks.splice(insertIndex, 0, updatedTask);
+      }
+
+      return updatedTasks;
+    });
+  };
+
   return (
     <div className="">
       <DndContext
@@ -304,7 +346,7 @@ export function KanbanBoard() {
       >
         <BoardContainer>
           <SortableContext items={columnsId}>
-            {columns.map((col) => (
+            {columns.map((col, index) => (
               <BoardColumn
                 key={col.id}
                 column={col}
@@ -314,6 +356,9 @@ export function KanbanBoard() {
                 onUpdateTask={updateTask}
                 onDeleteColumn={deleteColumn}
                 onUpdateColumn={updateColumn}
+                onBumpTask={bumpTask}
+                isLeftmostColumn={index === 0}
+                isRightmostColumn={index === columns.length - 1}
               />
             ))}
           </SortableContext>
@@ -342,6 +387,9 @@ export function KanbanBoard() {
                   onDeleteColumn={deleteColumn}
                   onUpdateColumn={updateColumn}
                   onUpdateTask={updateTask}
+                  onBumpTask={bumpTask}
+                  isLeftmostColumn={false}
+                  isRightmostColumn={false}
                 />
               )}
               {activeTask && (
@@ -350,6 +398,9 @@ export function KanbanBoard() {
                   isOverlay
                   onDelete={deleteTask}
                   onUpdate={updateTask}
+                  onBump={bumpTask}
+                  isLeftmostColumn={false}
+                  isRightmostColumn={false}
                 />
               )}
             </DragOverlay>,
