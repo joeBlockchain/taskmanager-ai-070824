@@ -22,31 +22,33 @@ const getGreeting = () => {
 
 const suggestions = [
   {
-    title: "Customer Persona",
-    description: "Create a detailed customer persona for our target market.",
-  },
-  {
-    title: "Feature Prioritization",
+    title: "Kanban Board Setup",
     description:
-      "Analyze and prioritize our product backlog for the next quarter.",
+      "Guide me through setting up a new Kanban board for my project.",
   },
   {
-    title: "Pricing Strategy",
+    title: "Task Prioritization",
     description:
-      "Suggest optimal pricing tiers based on our features and market.",
+      "Help me prioritize tasks on my Kanban board for the next sprint.",
   },
   {
-    title: "Churn Reduction",
-    description: "Propose strategies to reduce customer churn rate by 20%.",
+    title: "Workflow Optimization",
+    description: "Suggest ways to optimize my workflow using the Kanban board.",
   },
   {
-    title: "Competitor Analysis",
-    description: "Compare our product features with top 3 competitors.",
-  },
-  {
-    title: "Growth Hacking",
+    title: "Team Collaboration",
     description:
-      "Generate 5 creative growth hacking ideas for rapid user acquisition.",
+      "Provide tips on how to improve team collaboration using Kanban boards.",
+  },
+  {
+    title: "Progress Tracking",
+    description:
+      "Show me how to effectively track progress on my Kanban board.",
+  },
+  {
+    title: "Task Management",
+    description:
+      "Give me strategies for managing tasks efficiently on a Kanban board.",
   },
 ];
 
@@ -71,7 +73,7 @@ const PromptSuggestions: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {suggestions.map((chat, index) => (
           <Card key={index} className="relative group">
             <CardHeader>
