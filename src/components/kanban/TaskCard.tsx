@@ -18,7 +18,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { ColumnId } from "./KanbanBoard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,13 +32,6 @@ import {
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 
-export interface Task {
-  id: UniqueIdentifier;
-  columnId: ColumnId;
-  title: string;
-  content: string;
-}
-
 interface TaskCardProps {
   task: Task;
   isOverlay?: boolean;
@@ -50,12 +42,7 @@ interface TaskCardProps {
   isRightmostColumn: boolean;
 }
 
-export type TaskType = "Task";
-
-export interface TaskDragData {
-  type: TaskType;
-  task: Task;
-}
+import { type Task, type TaskDragData } from "./types";
 
 export function TaskCard({
   task,

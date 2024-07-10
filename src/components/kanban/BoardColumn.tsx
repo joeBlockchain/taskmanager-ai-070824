@@ -2,13 +2,12 @@ import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { useDndContext, type UniqueIdentifier } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo } from "react";
-import { Task, TaskCard } from "./TaskCard";
 import { cva } from "class-variance-authority";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GripVertical, Pencil, PlusIcon, Trash2 } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-
+import { type Column, type Task, type ColumnDragData } from "./types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,18 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "../ui/input";
-
-export interface Column {
-  id: UniqueIdentifier;
-  title: string;
-}
-
-export type ColumnType = "Column";
-
-export interface ColumnDragData {
-  type: ColumnType;
-  column: Column;
-}
+import { TaskCard } from "./TaskCard";
 
 interface BoardColumnProps {
   column: Column;
