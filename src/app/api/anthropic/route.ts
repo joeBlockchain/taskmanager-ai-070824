@@ -2,19 +2,6 @@ import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { clerkClient } from "@clerk/nextjs/server";
 import { auth } from "@clerk/nextjs/server";
-
-export const runtime = "edge";
-
-// Define cost constants
-const INPUT_TOKEN_COST = 3; // Cost per 1,000,000 input tokens
-const OUTPUT_TOKEN_COST = 15; // Cost per 1,000,000 output tokens
-
-// Define the system message for role prompting
-const SYSTEM_MESSAGE = `You are an AI assistant. You are free to answer questions with or without the tools.  You do not need to remind the user
-each time you respond that you do not have a tool for the user's question.  When a tool is a good fit for the user's question, you can use the tool.
-When using a tool, please let the user know what tool you are using and why.  When you are using the summarize_url tool be sure to include in your
-response the URL you are summarizing even if the user provided the url in their message.`;
-
 import {
   createColumn,
   updateColumn,
@@ -23,6 +10,18 @@ import {
   updateTask,
   deleteTask,
 } from "@/components/kanban/tools";
+
+export const runtime = "edge";
+
+// Define cost constants
+const INPUT_TOKEN_COST = 3; // Cost per 1,000,000 input tokens
+const OUTPUT_TOKEN_COST = 15; // Cost per 1,000,000 output tokens
+
+// Define the system message for role prompting
+const SYSTEM_MESSAGE = `You are an AI assistant. You are free to answer questions with or without the tools. You do not need to remind the user
+each time you respond that you do not have a tool for the user's question. When a tool is a good fit for the user's question, you can use the tool.
+When using a tool, please let the user know what tool you are using and why. When you are using the summarize_url tool be sure to include in your
+response the URL you are summarizing even if the user provided the url in their message.`;
 
 // Define tool types
 type ToolSchema = {
@@ -35,11 +34,11 @@ type Tool = {
   name: string;
   description: string;
   schema: ToolSchema;
-  handler: (input: any) => Promise<string>;
+  handler: (input: any, userId: string) => Promise<string>;
 };
 
 // Define tools
-const tools: Tool[] = [
+const createTools = (userId: string): Tool[] => [
   {
     name: "generate_random_number",
     description: "Generates a random number within a specified range.",
@@ -110,7 +109,7 @@ const tools: Tool[] = [
       },
       required: ["title"],
     },
-    handler: async ({ title }: { title: string }) => {
+    handler: async ({ title }: { title: string }, userId: string) => {
       const newColumn = await createColumn(title, userId);
       return JSON.stringify(newColumn);
     },
@@ -132,13 +131,10 @@ const tools: Tool[] = [
       },
       required: ["column_id", "new_title"],
     },
-    handler: async ({
-      column_id,
-      new_title,
-    }: {
-      column_id: string;
-      new_title: string;
-    }) => {
+    handler: async (
+      { column_id, new_title }: { column_id: string; new_title: string },
+      userId: string
+    ) => {
       const updatedColumn = await updateColumn(column_id, new_title);
       return updatedColumn ? JSON.stringify(updatedColumn) : "Column not found";
     },
@@ -156,7 +152,7 @@ const tools: Tool[] = [
       },
       required: ["column_id"],
     },
-    handler: async ({ column_id }: { column_id: string }) => {
+    handler: async ({ column_id }: { column_id: string }, userId: string) => {
       const result = await deleteColumn(column_id);
       return result ? "Column deleted successfully" : "Column not found";
     },
@@ -182,16 +178,15 @@ const tools: Tool[] = [
       },
       required: ["column_id", "title", "content"],
     },
-    handler: async ({
-      column_id,
-      title,
-      content,
-    }: {
-      column_id: string;
-      title: string;
-      content: string;
-    }) => {
-      const newTask = createTask(column_id, title, content, userId);
+    handler: async (
+      {
+        column_id,
+        title,
+        content,
+      }: { column_id: string; title: string; content: string },
+      userId: string
+    ) => {
+      const newTask = await createTask(column_id, title, content, userId);
       return JSON.stringify(newTask);
     },
   },
@@ -216,16 +211,15 @@ const tools: Tool[] = [
       },
       required: ["task_id", "new_title", "new_content"],
     },
-    handler: async ({
-      task_id,
-      new_title,
-      new_content,
-    }: {
-      task_id: string;
-      new_title: string;
-      new_content: string;
-    }) => {
-      const updatedTask = updateTask(task_id, new_title, new_content);
+    handler: async (
+      {
+        task_id,
+        new_title,
+        new_content,
+      }: { task_id: string; new_title: string; new_content: string },
+      userId: string
+    ) => {
+      const updatedTask = await updateTask(task_id, new_title, new_content);
       return updatedTask ? JSON.stringify(updatedTask) : "Task not found";
     },
   },
@@ -242,19 +236,12 @@ const tools: Tool[] = [
       },
       required: ["task_id"],
     },
-    handler: async ({ task_id }: { task_id: string }) => {
-      const result = deleteTask(task_id);
+    handler: async ({ task_id }: { task_id: string }, userId: string) => {
+      const result = await deleteTask(task_id);
       return result ? "Task deleted successfully" : "Task not found";
     },
   },
 ];
-
-// Convert tools to Anthropic format
-const anthropicTools: Anthropic.Messages.Tool[] = tools.map((tool) => ({
-  name: tool.name,
-  description: tool.description,
-  input_schema: tool.schema,
-}));
 
 async function processFiles(files: File[]): Promise<string> {
   const fileContents = await Promise.all(
@@ -305,6 +292,13 @@ export async function POST(req: NextRequest) {
   const anthropicMessages = messages.map((msg: any) => ({
     role: msg.role,
     content: [{ type: "text", text: msg.content }],
+  }));
+
+  const tools = createTools(userId);
+  const anthropicTools: Anthropic.Messages.Tool[] = tools.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: tool.schema,
   }));
 
   const stream = await anthropic.messages.create({
@@ -362,7 +356,7 @@ export async function POST(req: NextRequest) {
             const tool = tools.find((t) => t.name === currentToolUse.name);
 
             if (tool) {
-              const toolResult = await tool.handler(toolInput);
+              const toolResult = await tool.handler(toolInput, userId);
               console.log("Tool result:", toolResult);
               const updatedMessages: Anthropic.Messages.MessageParam[] = [
                 ...anthropicMessages,
