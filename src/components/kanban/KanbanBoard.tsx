@@ -1,5 +1,15 @@
-import { useMemo, useRef, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { createClient } from "@supabase/supabase-js";
+import {
+  createColumn,
+  updateColumn as updateColumnInDB,
+  deleteColumn as deleteColumnInDB,
+  createTask as createTaskInDB,
+  updateTask as updateTaskInDB,
+  deleteTask as deleteTaskInDB,
+} from "./tools";
 
 import { BoardColumn, BoardContainer } from "./BoardColumn";
 import {
@@ -29,12 +39,113 @@ import { defaultCols, initialTasks } from "./defaultData";
 import { type Task, type Column } from "./types";
 export type ColumnId = (typeof defaultCols)[number]["id"];
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export function KanbanBoard() {
-  const [columns, setColumns] = useState<Column[]>(defaultCols);
+  const { user } = useUser();
+  const userId = user?.id;
+
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (userId) {
+      setIsLoading(true);
+      Promise.all([fetchColumns(), fetchTasks()])
+        .then(() => setIsLoading(false))
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+          setIsLoading(false);
+        });
+    }
+  }, [userId]);
+
+  async function fetchColumns() {
+    if (!userId) return;
+    try {
+      const { data, error } = await supabase
+        .from("columns")
+        .select("*")
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      const formattedColumns = data.map((column: any) => ({
+        id: column.id,
+        title: column.title,
+      }));
+      setColumns(formattedColumns);
+    } catch (error) {
+      console.error("Error fetching columns:", error);
+    }
+  }
+
+  async function fetchTasks() {
+    if (!userId) return;
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      const formattedTasks = data.map((task: any) => ({
+        id: task.id,
+        columnId: task.column_id,
+        title: task.title,
+        content: task.content,
+      }));
+      setTasks(formattedTasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
+  }
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const columnsSubscription = supabase
+      .channel("custom-all-channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "columns",
+          filter: `user_id=eq.${userId}`,
+        },
+        fetchColumns
+      )
+      .subscribe();
+
+    const tasksSubscription = supabase
+      .channel("custom-all-channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `user_id=eq.${userId}`,
+        },
+        fetchTasks
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(columnsSubscription);
+      supabase.removeChannel(tasksSubscription);
+    };
+  }, [userId]);
+
   const pickedUpTaskColumn = useRef<ColumnId | null>(null);
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
-
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
 
@@ -154,49 +265,96 @@ export function KanbanBoard() {
     },
   };
 
-  const addColumn = () => {
-    const newColumn: Column = {
-      id: `column-${Date.now()}`,
-      title: `New Column ${columns.length + 1}`,
-    };
-    setColumns([...columns, newColumn]);
+  const addColumn = async () => {
+    if (!userId) {
+      console.error("User not authenticated");
+      return;
+    }
+    try {
+      const newColumn = await createColumn(
+        `New Column ${columns.length + 1}`,
+        userId
+      );
+      setColumns([...columns, newColumn]);
+    } catch (error) {
+      console.error("Error creating column:", error);
+    }
   };
 
-  const updateColumn = (columnId: UniqueIdentifier, newTitle: string) => {
-    setColumns(
-      columns.map((col) =>
-        col.id === columnId ? { ...col, title: newTitle } : col
-      )
-    );
+  const updateColumn = async (columnId: UniqueIdentifier, newTitle: string) => {
+    try {
+      const updatedColumn = await updateColumnInDB(
+        columnId as string,
+        newTitle
+      );
+      setColumns(
+        columns.map((col) => (col.id === columnId ? updatedColumn : col))
+      );
+    } catch (error) {
+      console.error("Error updating column:", error);
+    }
   };
 
-  const deleteColumn = (columnId: UniqueIdentifier, tasksToDelete: Task[]) => {
-    setColumns(columns.filter((col) => col.id !== columnId));
-    setTasks(
-      tasks.filter((task) => !tasksToDelete.some((t) => t.id === task.id))
-    );
+  const deleteColumn = async (
+    columnId: UniqueIdentifier,
+    tasksToDelete: Task[]
+  ) => {
+    try {
+      await deleteColumnInDB(columnId as string);
+      setColumns(columns.filter((col) => col.id !== columnId));
+      setTasks(
+        tasks.filter((task) => !tasksToDelete.some((t) => t.id === task.id))
+      );
+    } catch (error) {
+      console.error("Error deleting column:", error);
+    }
   };
 
-  const addTask = (columnId: UniqueIdentifier) => {
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      columnId: columnId as ColumnId,
-      title: `New Task ${tasks.length + 1}`,
-      content: `Content for New Task ${tasks.length + 1}`,
-    };
-    setTasks([...tasks, newTask]);
+  const addTask = async (columnId: UniqueIdentifier) => {
+    if (!userId) {
+      console.error("User not authenticated");
+      return;
+    }
+    try {
+      const newTask = await createTaskInDB(
+        columnId as string,
+        `New Task ${tasks.length + 1}`,
+        `Content for New Task ${tasks.length + 1}`,
+        userId
+      );
+      setTasks([...tasks, newTask]);
+    } catch (error) {
+      console.error("Error creating task:", error);
+    }
   };
 
-  const updateTask = (taskId: UniqueIdentifier, updatedTask: Partial<Task>) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === taskId ? { ...task, ...updatedTask } : task
-      )
-    );
+  const updateTask = async (
+    taskId: UniqueIdentifier,
+    updatedTask: Partial<Task>
+  ) => {
+    try {
+      const updated = await updateTaskInDB(
+        taskId as string,
+        updatedTask.title || "",
+        updatedTask.content || ""
+      );
+      setTasks(
+        tasks.map((task) =>
+          task.id === taskId ? { ...task, ...updated } : task
+        )
+      );
+    } catch (error) {
+      console.error("Error updating task:", error);
+    }
   };
 
-  const deleteTask = (taskId: UniqueIdentifier) => {
-    setTasks(tasks.filter((task) => task.id !== taskId));
+  const deleteTask = async (taskId: UniqueIdentifier) => {
+    try {
+      await deleteTaskInDB(taskId as string);
+      setTasks(tasks.filter((task) => task.id !== taskId));
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
   };
 
   const bumpTask = (taskId: UniqueIdentifier, direction: "left" | "right") => {
@@ -240,6 +398,10 @@ export function KanbanBoard() {
       return updatedTasks;
     });
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="">

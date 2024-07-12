@@ -3,18 +3,18 @@ import type { Column } from "./types";
 import type { Task } from "./types";
 
 export const defaultCols: Column[] = [
-  // {
-  //   id: "todo" as const,
-  //   title: "Todo",
-  // },
-  // {
-  //   id: "in-progress" as const,
-  //   title: "In progress",
-  // },
-  // {
-  //   id: "done" as const,
-  //   title: "Done",
-  // },
+  {
+    id: "todo" as const,
+    title: "Todo",
+  },
+  {
+    id: "in-progress" as const,
+    title: "In progress",
+  },
+  {
+    id: "done" as const,
+    title: "Done",
+  },
 ];
 
 export const initialTasks: Task[] = [

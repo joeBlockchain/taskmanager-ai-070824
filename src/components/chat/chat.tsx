@@ -139,7 +139,7 @@ export default function Chat() {
     attachedFiles.forEach((file) => formData.append("files", file));
 
     try {
-      const res = await fetch("/api/claude", {
+      const res = await fetch("/api/anthropic", {
         method: "POST",
         body: formData,
       });
