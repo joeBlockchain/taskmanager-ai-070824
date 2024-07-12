@@ -91,6 +91,7 @@ export function SiteHeader() {
                 <SignInButton />
               </Button>
             </SignedOut>
+            {/* seems to close to mode toggle */}
             <SignedIn>
               <UserButton />
             </SignedIn>
