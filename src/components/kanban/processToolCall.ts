@@ -7,10 +7,14 @@ import {
   deleteTask,
 } from "./tools";
 
-export function processToolCall(toolName: string, toolInput: any) {
+export function processToolCall(
+  toolName: string,
+  toolInput: any,
+  userId: string
+) {
   switch (toolName) {
     case "create_column":
-      return createColumn(toolInput.title);
+      return createColumn(toolInput.title, userId);
     case "update_column":
       return updateColumn(toolInput.column_id, toolInput.new_title);
     case "delete_column":
@@ -19,7 +23,8 @@ export function processToolCall(toolName: string, toolInput: any) {
       return createTask(
         toolInput.column_id,
         toolInput.title,
-        toolInput.content
+        toolInput.content,
+        userId
       );
     case "update_task":
       return updateTask(
