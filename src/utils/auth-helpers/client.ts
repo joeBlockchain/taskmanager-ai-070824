@@ -34,7 +34,7 @@ export async function signInWithOAuth(e: React.FormEvent<HTMLFormElement>) {
 
   // Create client-side supabase client and call signInWithOAuth
   const supabase = createClient();
-  const redirectURL = encodeURIComponent(getURL('/auth/callback'));
+  const redirectURL = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
   console.log("oauth redirect url", redirectURL);
   await supabase.auth.signInWithOAuth({
     provider: provider,
