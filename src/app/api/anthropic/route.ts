@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { clerkClient } from "@clerk/nextjs/server";
-import { auth } from "@clerk/nextjs/server";
+import { createClient } from "@/utils/supabase/server";
+
 import {
   createColumn,
   updateColumn,
@@ -258,24 +258,24 @@ async function updateUserCost(
   totalCost: number
 ): Promise<void> {
   try {
-    const user = await clerkClient.users.getUser(userId);
-    const currentCost = (user.publicMetadata.totalCost as number) || 0;
+    const currentCost = 0;
     const updatedCost = currentCost + totalCost;
 
-    await clerkClient.users.updateUser(userId, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        totalCost: updatedCost,
-      },
-    });
+    //call supabase function to update user cost
   } catch (error) {
     console.error("Error updating user metadata:", error);
   }
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = auth();
-  if (!userId) {
+  //check auth from supabase db
+  const supabase = createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -294,7 +294,7 @@ export async function POST(req: NextRequest) {
     content: [{ type: "text", text: msg.content }],
   }));
 
-  const tools = createTools(userId);
+  const tools = createTools(user.id);
   const anthropicTools: Anthropic.Messages.Tool[] = tools.map((tool) => ({
     name: tool.name,
     description: tool.description,
@@ -356,7 +356,7 @@ export async function POST(req: NextRequest) {
             const tool = tools.find((t) => t.name === currentToolUse.name);
 
             if (tool) {
-              const toolResult = await tool.handler(toolInput, userId);
+              const toolResult = await tool.handler(toolInput, user.id);
               console.log("Tool result:", toolResult);
               const updatedMessages: Anthropic.Messages.MessageParam[] = [
                 ...anthropicMessages,
@@ -424,7 +424,7 @@ export async function POST(req: NextRequest) {
       const outputCost = (totalOutputTokens / 1_000_000) * OUTPUT_TOKEN_COST;
       const totalCost = inputCost + outputCost;
 
-      await updateUserCost(userId, totalCost);
+      await updateUserCost(user.id, totalCost);
 
       controller.enqueue(
         encoder.encode(

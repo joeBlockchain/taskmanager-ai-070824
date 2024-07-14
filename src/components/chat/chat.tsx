@@ -24,8 +24,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SignInButton } from "@clerk/nextjs";
 import FileItem from "./file-item";
+import Link from "next/link";
 
 interface Message {
   role: "user" | "assistant";
@@ -139,7 +139,7 @@ export default function Chat() {
     attachedFiles.forEach((file) => formData.append("files", file));
 
     try {
-      const res = await fetch("/api/anthropic", {
+      const res = await fetch("/api/claude", {
         method: "POST",
         body: formData,
       });
@@ -233,7 +233,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-1rem)] p-4 max-w-3xl mx-auto">
+    <div className="flex flex-col h-[calc(100vh-5rem)] p-4 max-w-3xl mx-auto">
       {messages.length === 0 && <PromptSuggestions />}
       <div className="flex-grow overflow-y-auto mb-4 pb-4">
         {messages.map((message, index) => (
@@ -244,10 +244,10 @@ export default function Chat() {
             }`}
           >
             <div
-              className={`inline-block rounded-lg ${
+              className={`group inline-block rounded-lg ${
                 message.role === "user"
                   ? "bg-primary text-primary-foreground p-2"
-                  : "py-4 px-4 bg-secondary text-secondary-foreground relative"
+                  : "py-4 px-4 border border-border text-secondary-foreground relative"
               }`}
             >
               {message.role === "user" ? (
@@ -310,11 +310,13 @@ export default function Chat() {
                     showSignInButton &&
                     index === messages.length - 1 && (
                       <div className="mt-2">
-                        <SignInButton>
-                          <Button className=" text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-700 dark:hover:bg-violet-800">
-                            Sign in
-                          </Button>
-                        </SignInButton>
+                        {/* need to add functionality to signin with supabase auth */}
+                        <Button
+                          asChild
+                          className=" text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-700 dark:hover:bg-violet-800"
+                        >
+                          <Link href="/signin">Sign in</Link>
+                        </Button>
                       </div>
                     )}
                   <div>
@@ -339,7 +341,7 @@ export default function Chat() {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <div className="absolute -bottom-[.80rem] right-2">
+                  <div className="hidden group-hover:block absolute -bottom-[.80rem] right-2">
                     <CopyButton text={message.content} />
                   </div>
                 </div>

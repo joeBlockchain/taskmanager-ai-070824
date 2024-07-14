@@ -1,9 +1,7 @@
 import Link from "next/link";
-
-import { ModeToggle } from "@/components/mode-toggle";
+import { SquareCheckBig } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CircleCheckBig, Share2, SquareCheckBig } from "lucide-react";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import AuthButton from "./ui/auth-button";
 
 export function SiteHeader() {
   return (
@@ -17,7 +15,6 @@ export function SiteHeader() {
           <SquareCheckBig className="h-6 w-6" />
           <span className="ml-4 font-semibold text-lg">TaskManager-AI</span>
         </Link>
-
         <div className="flex flex-1 items-center space-x-2 justify-end">
           <nav className="flex items-center gap-2">
             <Button asChild variant="ghost" size="icon" className="h-9 w-9">
@@ -84,17 +81,11 @@ export function SiteHeader() {
               </Link>
             </Button>
 
-            <ModeToggle />
-
-            <SignedOut>
-              <Button asChild variant="link" className="">
-                <SignInButton />
-              </Button>
-            </SignedOut>
-            {/* seems to close to mode toggle */}
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
+            <div className="ml-auto flex gap-2">
+              <div className="flex flex-row space-x-4">
+                <AuthButton size="small" />
+              </div>
+            </div>
           </nav>
         </div>
       </div>

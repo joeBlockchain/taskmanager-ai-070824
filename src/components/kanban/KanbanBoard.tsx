@@ -1,4 +1,5 @@
-import { useUser } from "@clerk/nextjs";
+"use client";
+
 import { useMemo, useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
@@ -44,10 +45,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export function KanbanBoard() {
-  const { user } = useUser();
-  const userId = user?.id;
-
+export function KanbanBoard({ userId }: { userId: string }) {
   const [columns, setColumns] = useState<Column[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -143,6 +141,40 @@ export function KanbanBoard() {
       supabase.removeChannel(tasksSubscription);
     };
   }, [userId]);
+
+  const addColumn = async () => {
+    if (!userId) {
+      console.error("User not authenticated");
+      return;
+    }
+    try {
+      const newColumn = await createColumn(
+        `New Column ${columns.length + 1}`,
+        userId
+      );
+      setColumns([...columns, newColumn]);
+    } catch (error) {
+      console.error("Error creating column:", error);
+    }
+  };
+
+  const addTask = async (columnId: UniqueIdentifier) => {
+    if (!userId) {
+      console.error("User not authenticated");
+      return;
+    }
+    try {
+      const newTask = await createTaskInDB(
+        columnId as string,
+        `New Task ${tasks.length + 1}`,
+        `Content for New Task ${tasks.length + 1}`,
+        userId
+      );
+      setTasks([...tasks, newTask]);
+    } catch (error) {
+      console.error("Error creating task:", error);
+    }
+  };
 
   const pickedUpTaskColumn = useRef<ColumnId | null>(null);
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
@@ -265,22 +297,6 @@ export function KanbanBoard() {
     },
   };
 
-  const addColumn = async () => {
-    if (!userId) {
-      console.error("User not authenticated");
-      return;
-    }
-    try {
-      const newColumn = await createColumn(
-        `New Column ${columns.length + 1}`,
-        userId
-      );
-      setColumns([...columns, newColumn]);
-    } catch (error) {
-      console.error("Error creating column:", error);
-    }
-  };
-
   const updateColumn = async (columnId: UniqueIdentifier, newTitle: string) => {
     try {
       const updatedColumn = await updateColumnInDB(
@@ -307,24 +323,6 @@ export function KanbanBoard() {
       );
     } catch (error) {
       console.error("Error deleting column:", error);
-    }
-  };
-
-  const addTask = async (columnId: UniqueIdentifier) => {
-    if (!userId) {
-      console.error("User not authenticated");
-      return;
-    }
-    try {
-      const newTask = await createTaskInDB(
-        columnId as string,
-        `New Task ${tasks.length + 1}`,
-        `Content for New Task ${tasks.length + 1}`,
-        userId
-      );
-      setTasks([...tasks, newTask]);
-    } catch (error) {
-      console.error("Error creating task:", error);
     }
   };
 
