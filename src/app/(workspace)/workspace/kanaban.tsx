@@ -5,7 +5,14 @@ import { createClient } from "@/utils/supabase/client";
 import { useState, useEffect } from "react";
 import { Column as ColumnType, Task as TaskType } from "./types";
 import Column from "./column";
-import { addColumn, addTask, deleteTask, deleteColumn } from "./actions";
+import {
+  addColumn,
+  addTask,
+  deleteTask,
+  updateTask,
+  deleteColumn,
+  updateColumn,
+} from "./actions";
 
 export default function Kanban() {
   const supabase = createClient();
@@ -137,8 +144,14 @@ export default function Kanban() {
               tasks={tasks}
               addTask={(columnId) => addTask(columnId, user)}
               deleteTask={(taskId) => deleteTask(taskId, setTasks)}
+              updateTask={(taskId, title, description) =>
+                updateTask(taskId, title, description, setTasks)
+              }
               deleteColumn={(columnId) =>
                 deleteColumn(columnId, setColumns, setTasks)
+              }
+              updateColumn={(columnId, title, description) =>
+                updateColumn(columnId, title, description, setColumns)
               }
             />
           ))}

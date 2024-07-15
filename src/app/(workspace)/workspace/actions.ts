@@ -44,6 +44,31 @@ export async function deleteTask(
   }
 }
 
+export async function updateTask(
+  taskId: string,
+  title: string,
+  description: string,
+  setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>
+) {
+  try {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ title, description })
+      .eq("id", taskId);
+
+    if (error) throw error;
+
+    // Optimistically update the UI
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? { ...task, title, description } : task
+      )
+    );
+  } catch (error) {
+    console.error("Error updating task:", error);
+  }
+}
+
 export async function deleteColumn(
   columnId: string,
   setColumns: React.Dispatch<React.SetStateAction<ColumnType[]>>,
@@ -75,5 +100,30 @@ export async function deleteColumn(
     );
   } catch (error) {
     console.error("Error deleting column:", error);
+  }
+}
+
+export async function updateColumn(
+  columnId: string,
+  title: string,
+  description: string,
+  setColumns: React.Dispatch<React.SetStateAction<ColumnType[]>>
+) {
+  try {
+    const { error } = await supabase
+      .from("columns")
+      .update({ title, description })
+      .eq("id", columnId);
+
+    if (error) throw error;
+
+    // Optimistically update the UI
+    setColumns((prevColumns) =>
+      prevColumns.map((column) =>
+        column.id === columnId ? { ...column, title, description } : column
+      )
+    );
+  } catch (error) {
+    console.error("Error updating column:", error);
   }
 }
