@@ -51,10 +51,12 @@ export function KanbanBoard({ userId }: { userId: string }) {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  const user = supabase.auth.getUser();
+
   useEffect(() => {
     if (userId) {
       setIsLoading(true);
-      Promise.all([fetchColumns(), fetchTasks()])
+      Promise.all([fetchColumns(), fetchTasks(), fetchTodos()])
         .then(() => setIsLoading(false))
         .catch((error) => {
           console.error("Error fetching data:", error);
@@ -66,10 +68,7 @@ export function KanbanBoard({ userId }: { userId: string }) {
   async function fetchColumns() {
     if (!userId) return;
     try {
-      const { data, error } = await supabase
-        .from("columns")
-        .select("*")
-        .eq("user_id", userId);
+      const { data, error } = await supabase.from("columns").select("*");
 
       if (error) throw error;
 
@@ -102,6 +101,33 @@ export function KanbanBoard({ userId }: { userId: string }) {
       setTasks(formattedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
+    }
+  }
+
+  async function fetchTodos() {
+    if (!userId) {
+      console.log("No userId available");
+      return;
+    }
+    console.log("Fetching todos for userId:", userId);
+    try {
+      const { data: todos, error } = await supabase.from("todos").select("*");
+      // .eq("user_id", userId);
+
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Fetched todos:", todos);
+
+      if (!todos || todos.length === 0) {
+        console.log("No todos found for this user");
+      }
+
+      return todos;
+    } catch (error) {
+      console.error("Error fetching todos:", error);
     }
   }
 
@@ -152,6 +178,7 @@ export function KanbanBoard({ userId }: { userId: string }) {
         `New Column ${columns.length + 1}`,
         userId
       );
+      console.log("newColumn", newColumn);
       setColumns([...columns, newColumn]);
     } catch (error) {
       console.error("Error creating column:", error);

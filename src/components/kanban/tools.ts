@@ -6,11 +6,20 @@ const supabase = createClient(
 );
 
 export async function createColumn(title: string, userId: string) {
+  if (!userId) {
+    throw new Error("userId is required to create a column");
+  }
+
   const { data, error } = await supabase
     .from("columns")
     .insert({ title, user_id: userId })
     .select()
     .single();
+
+    console.log("userId", userId);
+
+  console.log("data", data);
+  console.log("error", error);
 
   if (error) throw error;
   return data;

@@ -27,7 +27,7 @@ export default function ChatBotButton() {
           <MessageCircle className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px] sm:max-w-none">
+      <SheetContent className="w-[400px] sm:w-[540px] sm:max-w-none p-0">
         <ScrollArea className="">
           <Chat />
         </ScrollArea>

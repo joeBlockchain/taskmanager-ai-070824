@@ -56,13 +56,13 @@ const PromptSuggestions: React.FC = () => {
   const { text, Icon } = getGreeting();
 
   return (
-    <>
-      <div className="w-full flex flex-col items-center gap-2">
+    <div className="w-full">
+      <div className="flex flex-col items-center gap-2 mb-6">
         <Badge className="py-1 px-6 text-base">Guest Plan</Badge>
 
-        <h1 className="text-4xl font-light mb-6 flex items-center">
-          <Icon className="h-8 w-8 inline-block mr-2 relative top-[0rem]" />
-          <span>{text}</span> {/* Use the greeting here */}
+        <h1 className="text-2xl sm:text-3xl font-light flex items-center">
+          <Icon className="h-6 w-6 sm:h-8 sm:w-8 inline-block mr-2 relative top-[0rem]" />
+          <span>{text}</span>
         </h1>
       </div>
 
@@ -73,7 +73,7 @@ const PromptSuggestions: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {suggestions.map((chat, index) => (
           <Card key={index} className="relative group">
             <CardHeader>
@@ -86,7 +86,7 @@ const PromptSuggestions: React.FC = () => {
           </Card>
         ))}
       </div>
-    </>
+    </div>
   );
 };
 
