@@ -141,6 +141,49 @@ export default function Kanban() {
     }
   }
 
+  async function deleteTask(taskId: string) {
+    try {
+      const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+
+      if (error) throw error;
+
+      // Optimistically update the UI
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  }
+
+  async function deleteColumn(columnId: string) {
+    try {
+      // First, delete all tasks associated with this column
+      const { error: tasksError } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("column_id", columnId);
+
+      if (tasksError) throw tasksError;
+
+      // Then, delete the column itself
+      const { error: columnError } = await supabase
+        .from("columns")
+        .delete()
+        .eq("id", columnId);
+
+      if (columnError) throw columnError;
+
+      // Optimistically update the UI
+      setColumns((prevColumns) =>
+        prevColumns.filter((column) => column.id !== columnId)
+      );
+      setTasks((prevTasks) =>
+        prevTasks.filter((task) => task.column_id !== columnId)
+      );
+    } catch (error) {
+      console.error("Error deleting column:", error);
+    }
+  }
+
   function handleColumnChange(payload: any) {
     const { eventType, new: newColumn, old: oldColumn } = payload;
     console.log("Column change received!", payload);
@@ -186,11 +229,31 @@ export default function Kanban() {
       ) : (
         <div className="flex flex-row gap-4">
           {columns.map((column) => (
-            <Card key={column.id} className="w-[22rem] h-fit">
+            <Card
+              key={column.id}
+              className="relative w-[22rem] h-fit group/column"
+            >
+              <div className="absolute hidden group-hover/column:flex w-[1.5rem] -right-[.5rem] top-[.5rem] ">
+                <div className="flex flex-col space-y-1">
+                  <Button
+                    variant="outline"
+                    className="w-[2rem] h-[2rem] p-0 m-0"
+                  >
+                    <PencilLine className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-[2rem] h-[2rem] p-0 m-0"
+                    onClick={() => deleteColumn(column.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               <CardHeader>
                 <CardTitle className="">{column.title}</CardTitle>
                 <CardDescription className="pb-2">
-                  this is a description
+                  {column.description}
                 </CardDescription>
                 <Separator className="" />
               </CardHeader>
@@ -218,6 +281,7 @@ export default function Kanban() {
                             <Button
                               variant="outline"
                               className="w-[2rem] h-[2rem] p-0 m-0"
+                              onClick={() => deleteTask(task.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -279,7 +343,7 @@ export default function Kanban() {
               </CardContent>
               <CardFooter>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => addTask(column.id)}
                   className="w-full text-muted-foreground"
                 >
@@ -290,7 +354,7 @@ export default function Kanban() {
           ))}
           <div className="items-center h-fit ">
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={addColumn}
               className="text-muted-foreground w-[22rem]"
             >
