@@ -35,7 +35,7 @@ export default async function Home() {
         <SiteHeader />
       </nav>
 
-      <table className="min-w-full divide-y divide-border">
+      {/* <table className="min-w-full divide-y divide-border">
         <thead className="bg-secondary/20">
           <tr>
             <th
@@ -82,10 +82,10 @@ export default async function Home() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table> */}
 
-      {/* {user?.id && <KanbanBoard userId={user.id} />}
-      <ChatBotButton /> */}
+      {user?.id && <KanbanBoard userId={user.id} />}
+      <ChatBotButton />
     </main>
   );
 }

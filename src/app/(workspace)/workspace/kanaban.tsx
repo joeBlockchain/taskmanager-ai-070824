@@ -62,7 +62,6 @@ export default function Kanban() {
         data: { user },
         error,
       } = await supabase.auth.getUser();
-      console.log("user", user);
       if (error) throw error;
 
       setUser(user);
@@ -136,33 +135,35 @@ export default function Kanban() {
       {isLoading ? (
         <p>Loading...</p>
       ) : (
-        <div className="flex flex-row gap-4">
-          {columns.map((column) => (
-            <Column
-              key={column.id}
-              column={column}
-              tasks={tasks}
-              addTask={(columnId) => addTask(columnId, user)}
-              deleteTask={(taskId) => deleteTask(taskId, setTasks)}
-              updateTask={(taskId, title, description) =>
-                updateTask(taskId, title, description, setTasks)
-              }
-              deleteColumn={(columnId) =>
-                deleteColumn(columnId, setColumns, setTasks)
-              }
-              updateColumn={(columnId, title, description) =>
-                updateColumn(columnId, title, description, setColumns)
-              }
-            />
-          ))}
-          <div className="items-center h-fit ">
-            <Button
-              variant="outline"
-              onClick={() => addColumn(user)}
-              className="text-muted-foreground w-[22rem]"
-            >
-              Add Column
-            </Button>
+        <div className="overflow-x-auto">
+          <div className="flex flex-row gap-4 min-w-max">
+            {columns.map((column) => (
+              <Column
+                key={column.id}
+                column={column}
+                tasks={tasks}
+                addTask={(columnId) => addTask(columnId, user)}
+                deleteTask={(taskId) => deleteTask(taskId, setTasks)}
+                updateTask={(taskId, title, description) =>
+                  updateTask(taskId, title, description, setTasks)
+                }
+                deleteColumn={(columnId) =>
+                  deleteColumn(columnId, setColumns, setTasks)
+                }
+                updateColumn={(columnId, title, description) =>
+                  updateColumn(columnId, title, description, setColumns)
+                }
+              />
+            ))}
+            <div className="items-center h-fit">
+              <Button
+                variant="outline"
+                onClick={() => addColumn(user, "New Column")}
+                className="text-muted-foreground w-[22rem]"
+              >
+                Add Column
+              </Button>
+            </div>
           </div>
         </div>
       )}

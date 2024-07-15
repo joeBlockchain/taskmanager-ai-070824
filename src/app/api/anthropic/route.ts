@@ -2,15 +2,6 @@ import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/utils/supabase/server";
 
-import {
-  createColumn,
-  updateColumn,
-  deleteColumn,
-  createTask,
-  updateTask,
-  deleteTask,
-} from "@/components/kanban/tools";
-
 export const runtime = "edge";
 
 // Define cost constants
@@ -97,8 +88,8 @@ const createTools = (userId: string): Tool[] => [
     },
   },
   {
-    name: "create_column",
-    description: "Creates a new column with the given title.",
+    name: "add_column",
+    description: "Adds a new column for the user.",
     schema: {
       type: "object",
       properties: {
@@ -110,60 +101,30 @@ const createTools = (userId: string): Tool[] => [
       required: ["title"],
     },
     handler: async ({ title }: { title: string }, userId: string) => {
-      const newColumn = await createColumn(title, userId);
-      return JSON.stringify(newColumn);
+      console.log(`Adding column with title: ${title}`);
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("columns")
+          .insert({ title, user_id: userId })
+          .select();
+
+        if (error) throw error;
+        console.log("Column added successfully:", data);
+        return `Column "${title}" added successfully.`;
+      } catch (error) {
+        console.error("Error adding column:", error);
+        return `Error: Unable to add column. ${error}`;
+      }
     },
   },
   {
-    name: "update_column",
-    description: "Updates the title of an existing column.",
+    name: "add_task",
+    description: "Adds a new task to a column.",
     schema: {
       type: "object",
       properties: {
-        column_id: {
-          type: "string",
-          description: "The ID of the column to update.",
-        },
-        new_title: {
-          type: "string",
-          description: "The new title of the column.",
-        },
-      },
-      required: ["column_id", "new_title"],
-    },
-    handler: async (
-      { column_id, new_title }: { column_id: string; new_title: string },
-      userId: string
-    ) => {
-      const updatedColumn = await updateColumn(column_id, new_title);
-      return updatedColumn ? JSON.stringify(updatedColumn) : "Column not found";
-    },
-  },
-  {
-    name: "delete_column",
-    description: "Deletes a column with the given ID.",
-    schema: {
-      type: "object",
-      properties: {
-        column_id: {
-          type: "string",
-          description: "The ID of the column to delete.",
-        },
-      },
-      required: ["column_id"],
-    },
-    handler: async ({ column_id }: { column_id: string }, userId: string) => {
-      const result = await deleteColumn(column_id);
-      return result ? "Column deleted successfully" : "Column not found";
-    },
-  },
-  {
-    name: "create_task",
-    description: "Creates a new task in the specified column.",
-    schema: {
-      type: "object",
-      properties: {
-        column_id: {
+        columnId: {
           type: "string",
           description: "The ID of the column to add the task to.",
         },
@@ -171,74 +132,222 @@ const createTools = (userId: string): Tool[] => [
           type: "string",
           description: "The title of the new task.",
         },
-        content: {
-          type: "string",
-          description: "The content of the new task.",
-        },
       },
-      required: ["column_id", "title", "content"],
+      required: ["columnId", "title"],
     },
-    handler: async (
-      {
-        column_id,
-        title,
-        content,
-      }: { column_id: string; title: string; content: string },
-      userId: string
-    ) => {
-      const newTask = await createTask(column_id, title, content, userId);
-      return JSON.stringify(newTask);
-    },
-  },
-  {
-    name: "update_task",
-    description: "Updates the title and content of an existing task.",
-    schema: {
-      type: "object",
-      properties: {
-        task_id: {
-          type: "string",
-          description: "The ID of the task to update.",
-        },
-        new_title: {
-          type: "string",
-          description: "The new title of the task.",
-        },
-        new_content: {
-          type: "string",
-          description: "The new content of the task.",
-        },
-      },
-      required: ["task_id", "new_title", "new_content"],
-    },
-    handler: async (
-      {
-        task_id,
-        new_title,
-        new_content,
-      }: { task_id: string; new_title: string; new_content: string },
-      userId: string
-    ) => {
-      const updatedTask = await updateTask(task_id, new_title, new_content);
-      return updatedTask ? JSON.stringify(updatedTask) : "Task not found";
+    handler: async ({ columnId, title }: { columnId: string; title: string }, userId: string) => {
+      console.log(`Adding task with title: ${title} to column: ${columnId}`);
+      try {
+        const supabase = createClient();
+        const { error } = await supabase
+          .from("tasks")
+          .insert({ title, column_id: columnId, user_id: userId });
+
+        if (error) throw error;
+        console.log("Task added successfully");
+        return `Task "${title}" added successfully to column "${columnId}".`;
+      } catch (error) {
+        console.error("Error adding task:", error);
+        return `Error: Unable to add task. ${error}`;
+      }
     },
   },
   {
     name: "delete_task",
-    description: "Deletes a task with the given ID.",
+    description: "Deletes a task.",
     schema: {
       type: "object",
       properties: {
-        task_id: {
+        taskId: {
           type: "string",
           description: "The ID of the task to delete.",
         },
       },
-      required: ["task_id"],
+      required: ["taskId"],
     },
-    handler: async ({ task_id }: { task_id: string }, userId: string) => {
-      const result = await deleteTask(task_id);
-      return result ? "Task deleted successfully" : "Task not found";
+    handler: async ({ taskId }: { taskId: string }, userId: string) => {
+      console.log(`Deleting task with ID: ${taskId}`);
+      try {
+        const supabase = createClient();
+        const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+
+        if (error) throw error;
+        console.log("Task deleted successfully");
+        return `Task with ID "${taskId}" deleted successfully.`;
+      } catch (error) {
+        console.error("Error deleting task:", error);
+        return `Error: Unable to delete task. ${error}`;
+      }
+    },
+  },
+  {
+    name: "update_task",
+    description: "Updates a task.",
+    schema: {
+      type: "object",
+      properties: {
+        taskId: {
+          type: "string",
+          description: "The ID of the task to update.",
+        },
+        title: {
+          type: "string",
+          description: "The new title of the task.",
+        },
+        description: {
+          type: "string",
+          description: "The new description of the task.",
+        },
+      },
+      required: ["taskId", "title", "description"],
+    },
+    handler: async ({ taskId, title, description }: { taskId: string; title: string; description: string }, userId: string) => {
+      console.log(`Updating task with ID: ${taskId}`);
+      try {
+        const supabase = createClient();
+        const { error } = await supabase
+          .from("tasks")
+          .update({ title, description })
+          .eq("id", taskId);
+
+        if (error) throw error;
+        console.log("Task updated successfully");
+        return `Task with ID "${taskId}" updated successfully.`;
+      } catch (error) {
+        console.error("Error updating task:", error);
+        return `Error: Unable to update task. ${error}`;
+      }
+    },
+  },
+  {
+    name: "delete_column",
+    description: "Deletes a column and its associated tasks.",
+    schema: {
+      type: "object",
+      properties: {
+        columnId: {
+          type: "string",
+          description: "The ID of the column to delete.",
+        },
+      },
+      required: ["columnId"],
+    },
+    handler: async ({ columnId }: { columnId: string }, userId: string) => {
+      console.log(`Deleting column with ID: ${columnId}`);
+      try {
+        const supabase = createClient();
+        // First, delete all tasks associated with this column
+        const { error: tasksError } = await supabase
+          .from("tasks")
+          .delete()
+          .eq("column_id", columnId);
+
+        if (tasksError) throw tasksError;
+
+        // Then, delete the column itself
+        const { error: columnError } = await supabase
+          .from("columns")
+          .delete()
+          .eq("id", columnId);
+
+        if (columnError) throw columnError;
+
+        console.log("Column and associated tasks deleted successfully");
+        return `Column with ID "${columnId}" and its associated tasks deleted successfully.`;
+      } catch (error) {
+        console.error("Error deleting column:", error);
+        return `Error: Unable to delete column. ${error}`;
+      }
+    },
+  },
+  {
+    name: "update_column",
+    description: "Updates a column.",
+    schema: {
+      type: "object",
+      properties: {
+        columnId: {
+          type: "string",
+          description: "The ID of the column to update.",
+        },
+        title: {
+          type: "string",
+          description: "The new title of the column.",
+        },
+        description: {
+          type: "string",
+          description: "The new description of the column.",
+        },
+      },
+      required: ["columnId", "title", "description"],
+    },
+    handler: async ({ columnId, title, description }: { columnId: string; title: string; description: string }, userId: string) => {
+      console.log(`Updating column with ID: ${columnId}`);
+      try {
+        const supabase = createClient();
+        const { error } = await supabase
+          .from("columns")
+          .update({ title, description })
+          .eq("id", columnId);
+
+        if (error) throw error;
+        console.log("Column updated successfully");
+        return `Column with ID "${columnId}" updated successfully.`;
+      } catch (error) {
+        console.error("Error updating column:", error);
+        return `Error: Unable to update column. ${error}`;
+      }
+    },
+  },
+  {
+    name: "fetch_columns",
+    description: "Fetches all columns for the user.",
+    schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+    handler: async ( userId: string) => {
+      console.log("Fetching columns");
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("columns")
+          .select("*");
+
+          console.log("Columns fetched successfully:", data);
+        if (error) throw error;
+        console.log("Columns fetched successfully:", data);
+        return JSON.stringify(data);
+      } catch (error) {
+        console.error("Error fetching columns:", error);
+        return `Error: Unable to fetch columns. ${error}`;
+      }
+    },
+  },
+  {
+    name: "fetch_tasks",
+    description: "Fetches all tasks for the user.",
+    schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+    handler: async ( userId: string) => {
+      console.log("Fetching tasks");
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("tasks")
+          .select("*");
+
+        if (error) throw error;
+        console.log("Tasks fetched successfully:", data);
+        return JSON.stringify(data);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        return `Error: Unable to fetch tasks. ${error}`;
+      }
     },
   },
 ];
@@ -254,22 +363,43 @@ async function processFiles(files: File[]): Promise<string> {
 }
 
 async function updateUserCost(
+  supabase: ReturnType<typeof createClient>, // Add this parameter
   userId: string,
   totalCost: number
 ): Promise<void> {
   try {
-    const currentCost = 0;
-    const updatedCost = currentCost + totalCost;
+    // Get user current incurred total cost
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('api_cost_chat')
+      .eq('id', userId)
+      .single()
 
-    //call supabase function to update user cost
+    if (error) throw error
+
+    const currentCost = data?.api_cost_chat || 0
+
+    // Add total cost to current cost
+    const updatedCost = currentCost + totalCost
+
+    // Update user cost in the database
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ api_cost_chat: updatedCost })
+      .eq('id', userId)
+
+    if (updateError) throw updateError
   } catch (error) {
-    console.error("Error updating user metadata:", error);
+    console.error("Error updating user API cost:", error)
+    throw error  // Re-throw the error for the caller to handle if needed
   }
 }
 
+
 export async function POST(req: NextRequest) {
   //check auth from supabase db
-  const supabase = createClient();
+// Create a Supabase client
+const supabase = createClient();
 
   const {
     data: { user },
@@ -322,6 +452,8 @@ export async function POST(req: NextRequest) {
       let currentResponseText = "";
 
       for await (const chunk of stream) {
+console.log("chunk", chunk);
+
         if (chunk.type === "message_start") {
           totalInputTokens = chunk.message.usage.input_tokens;
         } else if (chunk.type === "message_delta") {
@@ -351,13 +483,18 @@ export async function POST(req: NextRequest) {
           currentToolInput += chunk.delta.partial_json;
         } else if (chunk.type === "content_block_stop" && currentToolUse) {
           try {
-            const toolInput = JSON.parse(currentToolInput);
-            console.log("Tool input:", toolInput);
             const tool = tools.find((t) => t.name === currentToolUse.name);
-
+  
             if (tool) {
+              let toolInput = {};
+              if (currentToolInput) {
+                toolInput = JSON.parse(currentToolInput);
+              }
+              console.log("Tool input:", toolInput);
+  
               const toolResult = await tool.handler(toolInput, user.id);
               console.log("Tool result:", toolResult);
+  
               const updatedMessages: Anthropic.Messages.MessageParam[] = [
                 ...anthropicMessages,
                 {
@@ -424,7 +561,8 @@ export async function POST(req: NextRequest) {
       const outputCost = (totalOutputTokens / 1_000_000) * OUTPUT_TOKEN_COST;
       const totalCost = inputCost + outputCost;
 
-      await updateUserCost(user.id, totalCost);
+      await updateUserCost(supabase, user.id, totalCost); 
+
 
       controller.enqueue(
         encoder.encode(

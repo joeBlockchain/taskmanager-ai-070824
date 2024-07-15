@@ -6,11 +6,14 @@ import {
 
 const supabase = createClient();
 
-export async function addColumn(user: any) {
+export async function addColumn(user: any, title: string) {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("columns")
-      .insert({ title: "New Column", user_id: user.id });
+      .insert({ title, user_id: user.id })
+      .select()
+
+      console.log("data", data);
     if (error) throw error;
   } catch (error) {
     console.error("Error adding column:", error);

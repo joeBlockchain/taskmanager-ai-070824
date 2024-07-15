@@ -139,7 +139,7 @@ export default function Chat() {
     attachedFiles.forEach((file) => formData.append("files", file));
 
     try {
-      const res = await fetch("/api/claude", {
+      const res = await fetch("/api/anthropic", {
         method: "POST",
         body: formData,
       });
@@ -233,7 +233,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-3xl mx-4 py-4">
+    <div className="flex flex-col h-full max-w-3xl">
       {messages.length === 0 && <PromptSuggestions />}
       <div className="flex-grow overflow-y-auto">
         {messages.map((message, index) => (
@@ -408,7 +408,20 @@ export default function Chat() {
               disabled={isLoading}
               className="absolute right-[.5rem] bottom-[2rem]"
             >
-              {isLoading ? "Sending..." : <CornerRightUp className="w-5 h-5" />}
+              {isLoading ? (
+                <span
+                  className="loader"
+                  style={
+                    {
+                      "--loader-size": "18px",
+                      "--loader-color": "#000",
+                      "--loader-color-dark": "#fff",
+                    } as React.CSSProperties
+                  }
+                ></span>
+              ) : (
+                <CornerRightUp className="w-5 h-5" />
+              )}
             </Button>
           </div>
         </form>
