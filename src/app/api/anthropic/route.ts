@@ -462,9 +462,10 @@ async function processChunks(
       );
     } else if (chunk.type === "content_block_stop" && currentToolUse) {
       try {
-        const toolInput = JSON.parse(currentToolInput);
+        // Parse the tool input, defaulting to an empty object if it's empty
+        const toolInput = currentToolInput ? JSON.parse(currentToolInput) : {};
         const tool = tools.find((t) => t.name === currentToolUse.name);
-
+  
         if (tool) {
           const toolResult = await tool.handler(toolInput, userId);
           const updatedMessages: Anthropic.Messages.MessageParam[] = [
@@ -533,6 +534,9 @@ async function processChunks(
         currentToolInput = "";
       } catch (error) {
         console.error("Error parsing or executing tool input:", error);
+        // Add more detailed error logging
+        console.error("Current tool use:", currentToolUse);
+        console.error("Current tool input:", currentToolInput);
       }
     }
   }
