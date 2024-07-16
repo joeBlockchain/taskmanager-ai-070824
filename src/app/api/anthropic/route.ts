@@ -395,11 +395,172 @@ async function updateUserCost(
   }
 }
 
+// Modify the processChunks function to handle recursive tool use
+async function processChunks(
+  stream: AsyncIterable<any>,
+  anthropic: Anthropic,
+  anthropicMessages: Anthropic.Messages.MessageParam[],
+  encoder: TextEncoder,
+  controller: ReadableStreamDefaultController,
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  tools: Tool[],
+  totalInputTokens: number = 0,
+  totalOutputTokens: number = 0
+) {
+  let currentToolUse: any = null;
+  let currentToolInput = "";
+  let currentResponseText = "";
+
+  for await (const chunk of stream) {
+    console.log("chunk", chunk);
+
+    if (chunk.type === "message_start") {
+      totalInputTokens += chunk.message.usage.input_tokens;
+    } else if (chunk.type === "message_delta") {
+      totalOutputTokens += chunk.usage.output_tokens;
+    }
+
+    if (
+      chunk.type === "content_block_delta" &&
+      chunk.delta.type === "text_delta"
+    ) {
+      currentResponseText += chunk.delta.text;
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify(chunk.delta.text)}\n\n`)
+      );
+    }
+
+    if (
+      chunk.type === "content_block_start" &&
+      chunk.content_block.type === "tool_use"
+    ) {
+      currentToolUse = chunk.content_block;
+      currentToolInput = "";
+      // Notify client of tool call
+      controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({
+            type: "tool_call",
+            tool: currentToolUse.name,
+          })}\n\n`
+        )
+      );
+    } else if (
+      chunk.type === "content_block_delta" &&
+      chunk.delta.type === "input_json_delta"
+    ) {
+      currentToolInput += chunk.delta.partial_json;
+      // Stream the input JSON to the client
+      controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({
+            type: "tool_payload",
+            payload: chunk.delta.partial_json,
+          })}\n\n`
+        )
+      );
+    } else if (chunk.type === "content_block_stop" && currentToolUse) {
+      try {
+        const toolInput = JSON.parse(currentToolInput);
+        const tool = tools.find((t) => t.name === currentToolUse.name);
+
+        if (tool) {
+          const toolResult = await tool.handler(toolInput, userId);
+          const updatedMessages: Anthropic.Messages.MessageParam[] = [
+            ...anthropicMessages,
+            {
+              role: "assistant",
+              content: [
+                { type: "text", text: currentResponseText },
+                {
+                  type: currentToolUse.type,
+                  id: currentToolUse.id,
+                  name: currentToolUse.name,
+                  input: toolInput,
+                },
+              ],
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: currentToolUse.id,
+                  content: toolResult,
+                },
+              ],
+            },
+          ];
+
+          const toolResultResponse = await anthropic.messages.create({
+            model: "claude-3-5-sonnet-20240620",
+            max_tokens: 1000,
+            messages: updatedMessages,
+            stream: true,
+            tools: tools.map((t) => ({
+              name: t.name,
+              description: t.description,
+              input_schema: t.schema,
+            })),
+          });
+
+          await processChunks(
+            toolResultResponse,
+            anthropic,
+            updatedMessages,
+            encoder,
+            controller,
+            supabase,
+            userId,
+            tools,
+            totalInputTokens,
+            totalOutputTokens
+          );
+        }
+
+        // Notify client that the tool has finished
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: "tool_finished",
+              tool: currentToolUse.name,
+            })}\n\n`
+          )
+        );
+
+        currentToolUse = null;
+        currentToolInput = "";
+      } catch (error) {
+        console.error("Error parsing or executing tool input:", error);
+      }
+    }
+  }
+
+  const inputCost = (totalInputTokens / 1_000_000) * INPUT_TOKEN_COST;
+  const outputCost = (totalOutputTokens / 1_000_000) * OUTPUT_TOKEN_COST;
+  const totalCost = inputCost + outputCost;
+
+  await updateUserCost(supabase, userId, totalCost);
+
+  controller.enqueue(
+    encoder.encode(
+      `data: ${JSON.stringify({
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        inputCost: inputCost.toFixed(6),
+        outputCost: outputCost.toFixed(6),
+      })}\n\n`
+    )
+  );
+
+  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+  controller.close();
+}
 
 export async function POST(req: NextRequest) {
-  //check auth from supabase db
-// Create a Supabase client
-const supabase = createClient();
+  console.log("new request");
+  const supabase = createClient();
 
   const {
     data: { user },
@@ -408,7 +569,6 @@ const supabase = createClient();
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
-
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const formData = await req.formData();
@@ -419,10 +579,8 @@ const supabase = createClient();
   const lastUserMessage = messages[messages.length - 1];
   lastUserMessage.content += "\n\n" + fileContent;
 
-  const anthropicMessages = messages.map((msg: any) => ({
-    role: msg.role,
-    content: [{ type: "text", text: msg.content }],
-  }));
+  // Prepare messages for Anthropic API
+  const anthropicMessages = prepareAnthropicMessages(messages);
 
   const tools = createTools(user.id);
   const anthropicTools: Anthropic.Messages.Tool[] = tools.map((tool) => ({
@@ -442,141 +600,19 @@ const supabase = createClient();
   });
 
   const encoder = new TextEncoder();
-  let totalInputTokens = 0;
-  let totalOutputTokens = 0;
 
   const customReadable = new ReadableStream({
     async start(controller) {
-      let currentToolUse: any = null;
-      let currentToolInput = "";
-      let currentResponseText = "";
-
-      for await (const chunk of stream) {
-console.log("chunk", chunk);
-
-        if (chunk.type === "message_start") {
-          totalInputTokens = chunk.message.usage.input_tokens;
-        } else if (chunk.type === "message_delta") {
-          totalOutputTokens = chunk.usage.output_tokens;
-        }
-
-        if (
-          chunk.type === "content_block_delta" &&
-          chunk.delta.type === "text_delta"
-        ) {
-          currentResponseText += chunk.delta.text;
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(chunk.delta.text)}\n\n`)
-          );
-        }
-
-        if (
-          chunk.type === "content_block_start" &&
-          chunk.content_block.type === "tool_use"
-        ) {
-          currentToolUse = chunk.content_block;
-          currentToolInput = "";
-        } else if (
-          chunk.type === "content_block_delta" &&
-          chunk.delta.type === "input_json_delta"
-        ) {
-          currentToolInput += chunk.delta.partial_json;
-        } else if (chunk.type === "content_block_stop" && currentToolUse) {
-          try {
-            const tool = tools.find((t) => t.name === currentToolUse.name);
-  
-            if (tool) {
-              let toolInput = {};
-              if (currentToolInput) {
-                toolInput = JSON.parse(currentToolInput);
-              }
-              console.log("Tool input:", toolInput);
-  
-              const toolResult = await tool.handler(toolInput, user.id);
-              console.log("Tool result:", toolResult);
-  
-              const updatedMessages: Anthropic.Messages.MessageParam[] = [
-                ...anthropicMessages,
-                {
-                  role: "assistant",
-                  content: [
-                    { type: "text", text: currentResponseText },
-                    {
-                      type: currentToolUse.type,
-                      id: currentToolUse.id,
-                      name: currentToolUse.name,
-                      input: toolInput,
-                    },
-                  ],
-                },
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "tool_result",
-                      tool_use_id: currentToolUse.id,
-                      content: toolResult,
-                    },
-                  ],
-                },
-              ];
-
-              const toolResultResponse = await anthropic.messages.create({
-                model: "claude-3-5-sonnet-20240620",
-                max_tokens: 1000,
-                messages: updatedMessages,
-                stream: true,
-                tools: anthropicTools,
-              });
-
-              for await (const responseChunk of toolResultResponse) {
-                if (
-                  responseChunk.type === "content_block_delta" &&
-                  responseChunk.delta.type === "text_delta"
-                ) {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify(responseChunk.delta.text)}\n\n`
-                    )
-                  );
-                }
-                if (responseChunk.type === "message_delta") {
-                  totalOutputTokens += responseChunk.usage.output_tokens;
-                }
-                if (responseChunk.type === "message_start") {
-                  totalInputTokens += responseChunk.message.usage.input_tokens;
-                }
-              }
-            }
-
-            currentToolUse = null;
-            currentToolInput = "";
-          } catch (error) {
-            console.error("Error parsing or executing tool input:", error);
-          }
-        }
-      }
-
-      const inputCost = (totalInputTokens / 1_000_000) * INPUT_TOKEN_COST;
-      const outputCost = (totalOutputTokens / 1_000_000) * OUTPUT_TOKEN_COST;
-      const totalCost = inputCost + outputCost;
-
-      await updateUserCost(supabase, user.id, totalCost); 
-
-
-      controller.enqueue(
-        encoder.encode(
-          `data: ${JSON.stringify({
-            inputTokens: totalInputTokens,
-            outputTokens: totalOutputTokens,
-            inputCost: inputCost.toFixed(6),
-            outputCost: outputCost.toFixed(6),
-          })}\n\n`
-        )
+      await processChunks(
+        stream,
+        anthropic,
+        anthropicMessages,
+        encoder,
+        controller,
+        supabase,
+        user.id,
+        tools
       );
-
-      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      controller.close();
     },
   });
 
@@ -587,4 +623,37 @@ console.log("chunk", chunk);
       Connection: "keep-alive",
     },
   });
+}
+
+function prepareAnthropicMessages(messages: any[]): Anthropic.Messages.MessageParam[] {
+  const anthropicMessages: Anthropic.Messages.MessageParam[] = [];
+  
+  for (const message of messages) {
+    if (message.role === "user") {
+      anthropicMessages.push({
+        role: "user",
+        content: [{ type: "text", text: message.content }],
+      });
+    } else if (message.role === "assistant") {
+      // Combine all assistant messages into a single message
+      const lastAssistantMessage = anthropicMessages[anthropicMessages.length - 1];
+      if (lastAssistantMessage && lastAssistantMessage.role === "assistant") {
+        if (Array.isArray(lastAssistantMessage.content)) {
+          lastAssistantMessage.content.push({ type: "text", text: message.content });
+        } else {
+          lastAssistantMessage.content = [
+            { type: "text", text: lastAssistantMessage.content },
+            { type: "text", text: message.content },
+          ];
+        }
+      } else {
+        anthropicMessages.push({
+          role: "assistant",
+          content: [{ type: "text", text: message.content }],
+        });
+      }
+    }
+  }
+
+  return anthropicMessages;
 }

@@ -90,6 +90,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
 export default function Chat() {
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [toolInfo, setToolInfo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showSignInButton, setShowSignInButton] = useState(false);
@@ -145,7 +146,6 @@ export default function Chat() {
       });
 
       if (res.status === 401) {
-        // Add AI-like response for unauthorized access
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -208,6 +208,29 @@ export default function Chat() {
                     parsedData.outputCost;
                   return updatedMessages;
                 });
+              } else if (parsedData.type === "tool_call") {
+                setMessages((prevMessages) => [
+                  ...prevMessages,
+                  {
+                    role: "assistant",
+                    content: `Calling tool: ${parsedData.tool}`,
+                  },
+                ]);
+              } else if (parsedData.type === "tool_payload") {
+                setMessages((prevMessages) => {
+                  const updatedMessages = [...prevMessages];
+                  updatedMessages[updatedMessages.length - 1].content +=
+                    parsedData.payload;
+                  return updatedMessages;
+                });
+              } else if (parsedData.type === "tool_finished") {
+                setMessages((prevMessages) => [
+                  ...prevMessages,
+                  {
+                    role: "assistant",
+                    content: `Tool ${parsedData.tool} finished.`,
+                  },
+                ]);
               }
             } catch (error) {
               console.error("Error parsing data:", error);
@@ -233,9 +256,9 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-3xl">
+    <div className="flex flex-col h-[calc(100vh-5rem)] p-4 max-w-3xl mx-auto">
       {messages.length === 0 && <PromptSuggestions />}
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto mb-4 pb-4">
         {messages.map((message, index) => (
           <div
             key={index}
@@ -310,7 +333,6 @@ export default function Chat() {
                     showSignInButton &&
                     index === messages.length - 1 && (
                       <div className="mt-2">
-                        {/* need to add functionality to signin with supabase auth */}
                         <Button
                           asChild
                           className=" text-white bg-violet-600 hover:bg-violet-500 dark:bg-violet-700 dark:hover:bg-violet-800"
