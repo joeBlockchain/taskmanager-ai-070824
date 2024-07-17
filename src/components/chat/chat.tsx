@@ -90,11 +90,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
 export default function Chat() {
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [toolInfo, setToolInfo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showSignInButton, setShowSignInButton] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [toolCallInProgress, setToolCallInProgress] = useState(false);
 
   useEffect(() => {
     scrollToBottom();
@@ -128,6 +128,8 @@ export default function Chat() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() && attachedFiles.length === 0) return;
+
+    console.log("handleSubmit");
 
     setIsLoading(true);
     const userMessage: Message = { role: "user", content: inputMessage };
@@ -177,24 +179,28 @@ export default function Chat() {
         if (done) break;
 
         const chunk = new TextDecoder().decode(value);
+        console.log("chunk", chunk);
+
         const lines = chunk.split("\n\n");
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const data = line.slice(6);
             if (data === "[DONE]") {
               setIsLoading(false);
+              setToolCallInProgress(false);
               break;
             }
             try {
               const parsedData = JSON.parse(data);
               if (typeof parsedData === "string") {
                 aiResponse += parsedData;
-                setMessages((prevMessages) => {
-                  const updatedMessages = [...prevMessages];
-                  updatedMessages[updatedMessages.length - 1].content +=
-                    parsedData;
-                  return updatedMessages;
-                });
+                setToolCallInProgress(false);
+              } else if (parsedData.type === "tool_call") {
+                aiResponse += `\n\n\`Tool call: ${parsedData.tool}\`\n\n`;
+                setToolCallInProgress(true);
+              } else if (parsedData.type === "tool_payload") {
+                aiResponse += `${parsedData.payload}`;
+                // Keep toolCallInProgress true here
               } else if (parsedData.inputTokens && parsedData.outputTokens) {
                 setMessages((prevMessages) => {
                   const updatedMessages = [...prevMessages];
@@ -208,30 +214,15 @@ export default function Chat() {
                     parsedData.outputCost;
                   return updatedMessages;
                 });
-              } else if (parsedData.type === "tool_call") {
-                setMessages((prevMessages) => [
-                  ...prevMessages,
-                  {
-                    role: "assistant",
-                    content: `Calling tool: ${parsedData.tool}`,
-                  },
-                ]);
-              } else if (parsedData.type === "tool_payload") {
-                setMessages((prevMessages) => {
-                  const updatedMessages = [...prevMessages];
-                  updatedMessages[updatedMessages.length - 1].content +=
-                    parsedData.payload;
-                  return updatedMessages;
-                });
-              } else if (parsedData.type === "tool_finished") {
-                setMessages((prevMessages) => [
-                  ...prevMessages,
-                  {
-                    role: "assistant",
-                    content: `Tool ${parsedData.tool} finished.`,
-                  },
-                ]);
+                setToolCallInProgress(false);
               }
+
+              setMessages((prevMessages) => {
+                const updatedMessages = [...prevMessages];
+                updatedMessages[updatedMessages.length - 1].content =
+                  aiResponse;
+                return updatedMessages;
+              });
             } catch (error) {
               console.error("Error parsing data:", error);
             }
@@ -255,6 +246,19 @@ export default function Chat() {
     }
   };
 
+  const ToolCallIndicator = () => (
+    <span
+      className="loader"
+      style={
+        {
+          "--loader-size": "18px",
+          "--loader-color": "#000",
+          "--loader-color-dark": "#fff",
+        } as React.CSSProperties
+      }
+    ></span>
+  );
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] p-4 max-w-3xl mx-auto">
       {messages.length === 0 && <PromptSuggestions />}
@@ -269,7 +273,7 @@ export default function Chat() {
             <div
               className={`group inline-block rounded-lg ${
                 message.role === "user"
-                  ? "bg-primary text-primary-foreground p-2"
+                  ? "bg-secondary text-secondary-foreground p-2"
                   : "py-4 px-4 border border-border text-secondary-foreground relative"
               }`}
             >
@@ -329,6 +333,9 @@ export default function Chat() {
                   >
                     {message.content}
                   </ReactMarkdown>
+                  {toolCallInProgress && index === messages.length - 1 && (
+                    <ToolCallIndicator />
+                  )}
                   {message.role === "assistant" &&
                     showSignInButton &&
                     index === messages.length - 1 && (

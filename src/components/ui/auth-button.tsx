@@ -87,9 +87,13 @@ export default async function AuthButton({
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <form action={signOut}>
-              <button type="submit" className="flex items-center gap-5">
+              <Button
+                variant="ghost"
+                type="submit"
+                className="flex items-left gap-5"
+              >
                 <LogOut className="mx-2" />
                 <div className="flex flex-col items-start justify-start">
                   <div>Sign out</div>
@@ -97,7 +101,7 @@ export default async function AuthButton({
                     Catch you on the flip side!
                   </div>
                 </div>
-              </button>
+              </Button>
             </form>
           </DropdownMenuItem>
         </DropdownMenuContent>

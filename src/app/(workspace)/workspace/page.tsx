@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 export default function Page() {
   return (
     <main className="w-full">
-      <SiteHeader />
+      {/* <SiteHeader /> */}
       <div className="flex flex-row">
         <div className="w-3/4 border-r border-border mr-4">
           <Kanban />

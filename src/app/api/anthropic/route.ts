@@ -13,7 +13,6 @@ const SYSTEM_MESSAGE = `You are an AI assistant. You are free to answer question
 each time you respond that you do not have a tool for the user's question. When a tool is a good fit for the user's question, you can use the tool.
 When using a tool, please let the user know what tool you are using and why. When you are using the summarize_url tool be sure to include in your
 response the URL you are summarizing even if the user provided the url in their message.`;
-
 // Define tool types
 type ToolSchema = {
   type: "object";
@@ -29,7 +28,7 @@ type Tool = {
 };
 
 // Define tools
-const createTools = (userId: string): Tool[] => [
+const tools: Tool[] = [
   {
     name: "generate_random_number",
     description: "Generates a random number within a specified range.",
@@ -352,6 +351,13 @@ const createTools = (userId: string): Tool[] => [
   },
 ];
 
+// Convert tools to Anthropic format
+const anthropicTools: Anthropic.Messages.Tool[] = tools.map((tool) => ({
+  name: tool.name,
+  description: tool.description,
+  input_schema: tool.schema,
+}));
+
 async function processFiles(files: File[]): Promise<string> {
   const fileContents = await Promise.all(
     files.map(async (file) => {
@@ -395,16 +401,14 @@ async function updateUserCost(
   }
 }
 
-// Modify the processChunks function to handle recursive tool use
 async function processChunks(
   stream: AsyncIterable<any>,
   anthropic: Anthropic,
-  anthropicMessages: Anthropic.Messages.MessageParam[],
+  anthropicMessages: any[],
   encoder: TextEncoder,
   controller: ReadableStreamDefaultController,
   supabase: ReturnType<typeof createClient>,
   userId: string,
-  tools: Tool[],
   totalInputTokens: number = 0,
   totalOutputTokens: number = 0
 ) {
@@ -414,7 +418,6 @@ async function processChunks(
 
   for await (const chunk of stream) {
     console.log("chunk", chunk);
-
     if (chunk.type === "message_start") {
       totalInputTokens += chunk.message.usage.input_tokens;
     } else if (chunk.type === "message_delta") {
@@ -468,6 +471,7 @@ async function processChunks(
   
         if (tool) {
           const toolResult = await tool.handler(toolInput, userId);
+  
           const updatedMessages: Anthropic.Messages.MessageParam[] = [
             ...anthropicMessages,
             {
@@ -499,11 +503,7 @@ async function processChunks(
             max_tokens: 1000,
             messages: updatedMessages,
             stream: true,
-            tools: tools.map((t) => ({
-              name: t.name,
-              description: t.description,
-              input_schema: t.schema,
-            })),
+            tools: anthropicTools,
           });
 
           await processChunks(
@@ -514,7 +514,6 @@ async function processChunks(
             controller,
             supabase,
             userId,
-            tools,
             totalInputTokens,
             totalOutputTokens
           );
@@ -573,6 +572,7 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
+
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const formData = await req.formData();
@@ -585,13 +585,6 @@ export async function POST(req: NextRequest) {
 
   // Prepare messages for Anthropic API
   const anthropicMessages = prepareAnthropicMessages(messages);
-
-  const tools = createTools(user.id);
-  const anthropicTools: Anthropic.Messages.Tool[] = tools.map((tool) => ({
-    name: tool.name,
-    description: tool.description,
-    input_schema: tool.schema,
-  }));
 
   const stream = await anthropic.messages.create({
     model: "claude-3-5-sonnet-20240620",
@@ -614,8 +607,7 @@ export async function POST(req: NextRequest) {
         encoder,
         controller,
         supabase,
-        user.id,
-        tools
+        user.id
       );
     },
   });
