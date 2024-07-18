@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/utils/supabase/server";
+import { it } from "node:test";
 
 export const runtime = "edge";
 
@@ -16,7 +17,16 @@ response the URL you are summarizing even if the user provided the url in their 
 // Define tool types
 type ToolSchema = {
   type: "object";
-  properties: Record<string, { type: string; description: string }>;
+  properties: Record<string, { 
+    type: string; 
+    items?: {  //used if passing an array of objects
+      type: string; 
+      properties?: Record<string, unknown>;
+      required?: string[]; 
+    }; 
+    enum?: string[];
+    description: string 
+  }>;
   required: string[];
 };
 
@@ -131,20 +141,49 @@ const tools: Tool[] = [
           type: "string",
           description: "The title of the new task.",
         },
+        description: {
+          type: "string",
+          description: "The description of the new task.",
+        },
+        due_date: {
+          type: "string",
+          description: "The due date of the new task in ISO 8601 format (YYYY-MM-DD).",
+        },
+        priority: {
+          type: "string",
+          description: "The priority of the new task.",
+          enum: ["urgent", "high", "medium", "low"],
+        },
       },
-      required: ["columnId", "title"],
+      required: ["columnId", "title", "description", "due_date", "priority"],
     },
-    handler: async ({ columnId, title }: { columnId: string; title: string }, userId: string) => {
+    handler: async ({ columnId, title, description, due_date, priority }: { columnId: string; title: string; description: string; due_date: string; priority: string }, userId: string) => {
       console.log(`Adding task with title: ${title} to column: ${columnId}`);
       try {
         const supabase = createClient();
+        
+        // Fetch available columns
+        const { data: columns, error: columnsError } = await supabase
+          .from("columns")
+          .select("id, title")
+          .eq("user_id", userId);
+
+        if (columnsError) throw columnsError;
+
+        // Check if the specified columnId exists
+        const columnExists = columns.some(column => column.id === columnId);
+        if (!columnExists) {
+          return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
+        }
+
+        // Add the task
         const { error } = await supabase
           .from("tasks")
-          .insert({ title, column_id: columnId, user_id: userId });
+          .insert({ title, column_id: columnId, user_id: userId, description, due_date, priority });
 
         if (error) throw error;
         console.log("Task added successfully");
-        return `Task "${title}" added successfully to column "${columnId}".`;
+        return `Task "${title}" added successfully to column "${columnId}". Available columns: ${JSON.stringify(columns)}`;
       } catch (error) {
         console.error("Error adding task:", error);
         return `Error: Unable to add task. ${error}`;
@@ -152,30 +191,75 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "delete_task",
-    description: "Deletes a task.",
+    name: "add_multiple_tasks",
+    description: "Adds multiple tasks to a column.",
     schema: {
       type: "object",
       properties: {
-        taskId: {
+        columnId: {
           type: "string",
-          description: "The ID of the task to delete.",
+          description: "The ID of the column to add the tasks to.",
+        },
+        tasks: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "The title of the task.",
+              },
+              description: {
+                type: "string",
+                description: "The description of the task.",
+              },
+              due_date: {
+                type: "string",
+                description: "The due date of the task in ISO 8601 format (YYYY-MM-DD).",
+              },
+              priority: {
+                type: "string",
+                description: "The priority of the task.",
+                enum: ["urgent", "high", "medium", "low"],
+              },
+            },
+            required: ["title", "description", "due_date", "priority"],
+          },
+          description: "An array of tasks to add.",
         },
       },
-      required: ["taskId"],
+      required: ["columnId", "tasks"],
     },
-    handler: async ({ taskId }: { taskId: string }, userId: string) => {
-      console.log(`Deleting task with ID: ${taskId}`);
+    handler: async ({ columnId, tasks }: { columnId: string; tasks: { title: string; description: string; due_date: string; priority: string }[] }, userId: string) => {
+      console.log(`Adding multiple tasks to column: ${columnId}`);
       try {
         const supabase = createClient();
-        const { error } = await supabase.from("tasks").delete().eq("id", taskId);
 
+        // Fetch available columns
+        const { data: columns, error: columnsError } = await supabase
+          .from("columns")
+          .select("id, title")
+          .eq("user_id", userId);
+
+        if (columnsError) throw columnsError;
+
+        // Check if the specified columnId exists
+        const columnExists = columns.some(column => column.id === columnId);
+        if (!columnExists) {
+          return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
+        }
+
+        const taskData = tasks.map(task => ({ ...task, column_id: columnId, user_id: userId }));
+        const { error } = await supabase
+          .from("tasks")
+          .insert(taskData);
+  
         if (error) throw error;
-        console.log("Task deleted successfully");
-        return `Task with ID "${taskId}" deleted successfully.`;
+        console.log("Tasks added successfully");
+        return `Tasks added successfully to column "${columnId}". Available columns: ${JSON.stringify(columns)}`;
       } catch (error) {
-        console.error("Error deleting task:", error);
-        return `Error: Unable to delete task. ${error}`;
+        console.error("Error adding tasks:", error);
+        return `Error: Unable to add tasks. ${error}`;
       }
     },
   },
@@ -197,21 +281,57 @@ const tools: Tool[] = [
           type: "string",
           description: "The new description of the task.",
         },
+        due_date: {
+          type: "string",
+          description: "The new due date of the task in ISO 8601 format (YYYY-MM-DD).",
+        },
+        priority: {
+          type: "string",
+          description: "The new priority of the task.",
+          enum: ["urgent", "high", "medium", "low"],
+        },
+        columnId: {
+          type: "string",
+          description: "The ID of the column to move the task to (optional).",
+        },
       },
-      required: ["taskId", "title", "description"],
+      required: ["taskId", "title", "description", "due_date", "priority"],
     },
-    handler: async ({ taskId, title, description }: { taskId: string; title: string; description: string }, userId: string) => {
+    handler: async ({ taskId, title, description, due_date, priority, columnId }: { taskId: string; title: string; description: string; due_date: string; priority: string; columnId?: string }, userId: string) => {
       console.log(`Updating task with ID: ${taskId}`);
       try {
         const supabase = createClient();
+
+        // Fetch available columns
+        const { data: columns, error: columnsError } = await supabase
+          .from("columns")
+          .select("id, title")
+          .eq("user_id", userId);
+
+        if (columnsError) throw columnsError;
+
+        // Check if the specified columnId exists (if provided)
+        if (columnId) {
+          const columnExists = columns.some(column => column.id === columnId);
+          if (!columnExists) {
+            return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
+          }
+        }
+
+        const updateData: any = { title, description, due_date, priority };
+        if (columnId) {
+          updateData.column_id = columnId;
+        }
+
         const { error } = await supabase
           .from("tasks")
-          .update({ title, description })
-          .eq("id", taskId);
+          .update(updateData)
+          .eq("id", taskId)
+          .eq("user_id", userId);
 
         if (error) throw error;
         console.log("Task updated successfully");
-        return `Task with ID "${taskId}" updated successfully.`;
+        return `Task with ID "${taskId}" updated successfully. Available columns: ${JSON.stringify(columns)}`;
       } catch (error) {
         console.error("Error updating task:", error);
         return `Error: Unable to update task. ${error}`;
@@ -314,7 +434,6 @@ const tools: Tool[] = [
           .from("columns")
           .select("*");
 
-          console.log("Columns fetched successfully:", data);
         if (error) throw error;
         console.log("Columns fetched successfully:", data);
         return JSON.stringify(data);
@@ -350,6 +469,7 @@ const tools: Tool[] = [
     },
   },
 ];
+
 
 // Convert tools to Anthropic format
 const anthropicTools: Anthropic.Messages.Tool[] = tools.map((tool) => ({
@@ -410,71 +530,88 @@ async function processChunks(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   totalInputTokens: number = 0,
-  totalOutputTokens: number = 0
+  totalOutputTokens: number = 0,
+  isTopLevelCall: boolean = true  // New parameter
 ) {
+  let isClosed = false;
   let currentToolUse: any = null;
   let currentToolInput = "";
   let currentResponseText = "";
 
-  for await (const chunk of stream) {
-    console.log("chunk", chunk);
-    if (chunk.type === "message_start") {
-      totalInputTokens += chunk.message.usage.input_tokens;
-    } else if (chunk.type === "message_delta") {
-      totalOutputTokens += chunk.usage.output_tokens;
-    }
+  try {
+    for await (const chunk of stream) {
+      console.log("chunk", chunk);
+      if (chunk.type === "message_start") {
+        totalInputTokens += chunk.message.usage.input_tokens;
+        console.log(`Message start: input tokens = ${totalInputTokens}`);
+      } else if (chunk.type === "message_delta") {
+        totalOutputTokens += chunk.usage.output_tokens;
+        console.log(`Message delta: output tokens = ${totalOutputTokens}`);
+      }
 
-    if (
-      chunk.type === "content_block_delta" &&
-      chunk.delta.type === "text_delta"
-    ) {
-      currentResponseText += chunk.delta.text;
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify(chunk.delta.text)}\n\n`)
-      );
-    }
+      if (
+        chunk.type === "content_block_delta" &&
+        chunk.delta.type === "text_delta"
+      ) {
+        currentResponseText += chunk.delta.text;
+        console.log(`Text delta: ${chunk.delta.text}`);
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(chunk.delta.text)}\n\n`)
+        );
+      }
 
-    if (
-      chunk.type === "content_block_start" &&
-      chunk.content_block.type === "tool_use"
-    ) {
-      currentToolUse = chunk.content_block;
-      currentToolInput = "";
-      // Notify client of tool call
-      controller.enqueue(
-        encoder.encode(
-          `data: ${JSON.stringify({
-            type: "tool_call",
-            tool: currentToolUse.name,
-          })}\n\n`
-        )
-      );
-    } else if (
-      chunk.type === "content_block_delta" &&
-      chunk.delta.type === "input_json_delta"
-    ) {
-      currentToolInput += chunk.delta.partial_json;
-      // Stream the input JSON to the client
-      controller.enqueue(
-        encoder.encode(
-          `data: ${JSON.stringify({
-            type: "tool_payload",
-            payload: chunk.delta.partial_json,
-          })}\n\n`
-        )
-      );
-    } else if (chunk.type === "content_block_stop" && currentToolUse) {
-      try {
-        // Parse the tool input, defaulting to an empty object if it's empty
-        const toolInput = currentToolInput ? JSON.parse(currentToolInput) : {};
-        const tool = tools.find((t) => t.name === currentToolUse.name);
-  
-        if (tool) {
-          const toolResult = await tool.handler(toolInput, userId);
-  
-          const updatedMessages: Anthropic.Messages.MessageParam[] = [
-            ...anthropicMessages,
-            {
+      if (
+        chunk.type === "content_block_start" &&
+        chunk.content_block.type === "tool_use"
+      ) {
+        currentToolUse = chunk.content_block;
+        currentToolInput = "";
+        console.log(`Tool use started: ${currentToolUse.name}`);
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: "tool_call",
+              tool: currentToolUse.name,
+            })}\n\n`
+          )
+        );
+      } else if (
+        chunk.type === "content_block_delta" &&
+        chunk.delta.type === "input_json_delta"
+      ) {
+        currentToolInput += chunk.delta.partial_json;
+        console.log(`Input JSON delta: ${chunk.delta.partial_json}`);
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: "tool_payload",
+              payload: chunk.delta.partial_json,
+            })}\n\n`
+          )
+        );
+      } else if (chunk.type === "content_block_stop" && currentToolUse) {
+        try {
+          console.log(`Tool use stopped: ${currentToolUse.name}`);
+          const toolInput = currentToolInput ? JSON.parse(currentToolInput) : {};
+          const tool = tools.find((t) => t.name === currentToolUse.name);
+
+          if (tool) {
+            console.log(`Executing tool handler: ${tool.name}`);
+            const toolResult = await tool.handler(toolInput, userId);
+            console.log(`Tool result: ${toolResult}`);
+
+            // Stream tool result to client
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "tool_result",
+                  tool: currentToolUse.name,
+                  result: toolResult,
+                })}\n\n`
+              )
+            );
+
+            anthropicMessages.push({
               role: "assistant",
               content: [
                 { type: "text", text: currentResponseText },
@@ -485,8 +622,9 @@ async function processChunks(
                   input: toolInput,
                 },
               ],
-            },
-            {
+            });
+
+            anthropicMessages.push({
               role: "user",
               content: [
                 {
@@ -495,70 +633,123 @@ async function processChunks(
                   content: toolResult,
                 },
               ],
-            },
-          ];
+            });
 
-          const toolResultResponse = await anthropic.messages.create({
-            model: "claude-3-5-sonnet-20240620",
-            max_tokens: 1000,
-            messages: updatedMessages,
-            stream: true,
-            tools: anthropicTools,
-          });
+            console.log(`Updated messages: ${JSON.stringify(anthropicMessages)}`);
 
-          await processChunks(
-            toolResultResponse,
-            anthropic,
-            updatedMessages,
-            encoder,
-            controller,
-            supabase,
-            userId,
-            totalInputTokens,
-            totalOutputTokens
+            // Create a new message to process the tool result
+            const toolResultResponse = await anthropic.messages.create({
+              model: "claude-3-5-sonnet-20240620",
+              max_tokens: 1000,
+              messages: anthropicMessages,
+              stream: true,
+              tools: anthropicTools,
+            });
+
+            // Process the new message stream
+            await processChunks(
+              toolResultResponse,
+              anthropic,
+              anthropicMessages,
+              encoder,
+              controller,
+              supabase,
+              userId,
+              totalInputTokens,
+              totalOutputTokens,
+              false  // This is not the top-level call
+            );
+          }
+
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "tool_finished",
+                tool: currentToolUse.name,
+              })}\n\n`
+            )
+          );
+        } catch (error) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "tool_error",
+                tool: currentToolUse.name,
+                error: error instanceof Error ? error.message : String(error),
+              })}\n\n`
+            )
           );
         }
 
-        // Notify client that the tool has finished
+        currentToolUse = null;
+        currentToolInput = "";
+        currentResponseText = "";
+      }
+    }
+
+    console.log("Stream processing completed!");
+
+    // Calculate and log totals
+    const inputCost = (totalInputTokens / 1_000_000) * INPUT_TOKEN_COST;
+    const outputCost = (totalOutputTokens / 1_000_000) * OUTPUT_TOKEN_COST;
+    const totalCost = inputCost + outputCost;
+
+    console.log(`Total input tokens: ${totalInputTokens}`);
+    console.log(`Total output tokens: ${totalOutputTokens}`);
+    console.log(`Total cost: ${totalCost}`);
+
+    if (!isClosed) {
+      try {
+        await updateUserCost(supabase, userId, totalCost);
+        console.log("Attempting to enqueue final cost data");
         controller.enqueue(
           encoder.encode(
             `data: ${JSON.stringify({
-              type: "tool_finished",
-              tool: currentToolUse.name,
+              totalInputTokens,
+              totalOutputTokens,
+              totalCost,
             })}\n\n`
           )
         );
-
-        currentToolUse = null;
-        currentToolInput = "";
       } catch (error) {
-        console.error("Error parsing or executing tool input:", error);
-        // Add more detailed error logging
-        console.error("Current tool use:", currentToolUse);
-        console.error("Current tool input:", currentToolInput);
+        console.error("Error enqueuing final cost data:", error);
+      }
+
+      // Only send DONE message and close controller if this is the top-level call
+      if (isTopLevelCall) {
+        try {
+          console.log("Attempting to enqueue DONE message");
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        } catch (error) {
+          console.error("Error enqueuing DONE message:", error);
+        }
+
+        try {
+          console.log("Attempting to close controller");
+          controller.close();
+          isClosed = true;
+        } catch (closeError) {
+          console.error("Error closing controller:", closeError);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error in processChunks:", error);
+    if (!isClosed) {
+      try {
+        console.log("Attempting to enqueue error message");
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              error: "An error occurred while processing the response",
+            })}\n\n`
+          )
+        );
+      } catch (enqueueError) {
+        console.error("Error enqueuing error message:", enqueueError);
       }
     }
   }
-
-  const inputCost = (totalInputTokens / 1_000_000) * INPUT_TOKEN_COST;
-  const outputCost = (totalOutputTokens / 1_000_000) * OUTPUT_TOKEN_COST;
-  const totalCost = inputCost + outputCost;
-
-  await updateUserCost(supabase, userId, totalCost);
-
-  controller.enqueue(
-    encoder.encode(
-      `data: ${JSON.stringify({
-        inputTokens: totalInputTokens,
-        outputTokens: totalOutputTokens,
-        inputCost: inputCost.toFixed(6),
-        outputCost: outputCost.toFixed(6),
-      })}\n\n`
-    )
-  );
-
-  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-  controller.close();
 }
 
 export async function POST(req: NextRequest) {
@@ -600,15 +791,25 @@ export async function POST(req: NextRequest) {
 
   const customReadable = new ReadableStream({
     async start(controller) {
-      await processChunks(
-        stream,
-        anthropic,
-        anthropicMessages,
-        encoder,
-        controller,
-        supabase,
-        user.id
-      );
+      try {
+        await processChunks(
+          stream,
+          anthropic,
+          anthropicMessages,
+          encoder,
+          controller,
+          supabase,
+          user.id,
+          0,  // totalInputTokens
+          0,  // totalOutputTokens
+          true  // This is the top-level call
+        );
+      } catch (error) {
+        console.error("Error in stream processing:", error);
+        if (!controller.desiredSize) {
+          controller.error(error);
+        }
+      }
     },
   });
 

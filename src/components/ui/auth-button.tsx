@@ -43,7 +43,7 @@ export default async function AuthButton({
     <div className="flex items-center gap-4">
       <ModeToggle />
       <DropdownMenu>
-        <DropdownMenuTrigger className="w-full">
+        <DropdownMenuTrigger asChild className="w-full">
           <Button
             variant="ghost"
             className="w-full flex flex-row justify-between items-center gap-2"

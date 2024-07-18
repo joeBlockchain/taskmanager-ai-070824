@@ -73,7 +73,7 @@ const PromptSuggestions: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {suggestions.map((chat, index) => (
           <Card key={index} className="relative group">
             <CardHeader>
@@ -85,7 +85,7 @@ const PromptSuggestions: React.FC = () => {
             </div>
           </Card>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -123,11 +123,11 @@ export default function Task({ task, deleteTask, updateTask }: TaskProps) {
       <CardContent className="px-6 py-2 m-0 text-muted-foreground space-y-3">
         <>
           <div className="flex items-center gap-3">
-            <AlignLeft className="h-4 w-4" />
+            <AlignLeft className="h-4 w-4 flex-none" />
             <p>{task.description || "-"}</p>
           </div>
           <div className="flex items-center gap-3">
-            <Calendar className="h-4 w-4" />
+            <Calendar className="h-4 w-4 flex-none" />
             <p>
               {task.due_date
                 ? formatDistanceToNow(new Date(task.due_date))
@@ -135,7 +135,7 @@ export default function Task({ task, deleteTask, updateTask }: TaskProps) {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Flag className="h-4 w-4" />
+            <Flag className="h-4 w-4 flex-none" />
             {task.priority ? (
               <Badge
                 className={
