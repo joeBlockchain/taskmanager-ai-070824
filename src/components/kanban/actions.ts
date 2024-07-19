@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   Column as ColumnType,
   Task as TaskType,
-} from "@/app/(workspace)/workspace/types";
+} from "@/components/kanban/types";
 
 const supabase = createClient();
 

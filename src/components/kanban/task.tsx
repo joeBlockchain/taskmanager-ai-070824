@@ -25,7 +25,7 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { Task as TaskType } from "@/app/(workspace)/workspace/types";
+import { Task as TaskType } from "@/components/kanban/types";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

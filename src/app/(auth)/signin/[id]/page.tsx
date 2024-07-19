@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { MessagesSquare } from "lucide-react";
+import { MessagesSquare, SquareCheckBig } from "lucide-react";
 import Logo from "@/components/icons/Logo";
 
 export default async function SignIn({
@@ -75,7 +75,7 @@ export default async function SignIn({
             className="flex flex-row items-center gap-4"
             prefetch={false}
           >
-            <MessagesSquare className="h-8 w-8" />
+            <SquareCheckBig className="h-8 w-8" />
             <Logo className="text-3xl font-medium" />
           </Link>
         </div>

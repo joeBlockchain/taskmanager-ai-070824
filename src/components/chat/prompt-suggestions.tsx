@@ -57,7 +57,7 @@ const PromptSuggestions: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="flex flex-col items-center gap-2 mb-6">
+      {/* <div className="flex flex-col items-center gap-2 mb-6">
         <Badge className="py-1 px-6 text-base">Guest Plan</Badge>
 
         <h1 className="text-2xl sm:text-3xl font-light flex items-center">
@@ -73,7 +73,7 @@ const PromptSuggestions: React.FC = () => {
         </div>
       </div>
 
-      {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {suggestions.map((chat, index) => (
           <Card key={index} className="relative group">
             <CardHeader>

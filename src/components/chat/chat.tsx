@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
+  useContext,
 } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,12 @@ import {
 } from "@/components/ui/tooltip";
 import FileItem from "./file-item";
 import Link from "next/link";
+
+import { KanbanContext } from "@/components/kanban/kanban-wrapper";
+
+interface ChatProps {
+  projectId: string;
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -87,7 +94,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
   );
 };
 
-export default function Chat() {
+export default function Chat({ projectId }: ChatProps) {
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +102,8 @@ export default function Chat() {
   const [showSignInButton, setShowSignInButton] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [toolCallInProgress, setToolCallInProgress] = useState(false);
+
+  const { columns, tasks } = useContext(KanbanContext);
 
   useEffect(() => {
     scrollToBottom();
@@ -139,6 +148,9 @@ export default function Chat() {
 
     const formData = new FormData();
     formData.append("messages", JSON.stringify(updatedMessages));
+    formData.append("projectId", projectId);
+    formData.append("columns", JSON.stringify(columns));
+    formData.append("tasks", JSON.stringify(tasks));
     attachedFiles.forEach((file) => formData.append("files", file));
 
     try {
@@ -260,7 +272,7 @@ export default function Chat() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] p-4 max-w-3xl mx-auto">
+    <div className="flex flex-col h-full max-w-3xl mx-auto">
       {messages.length === 0 && <PromptSuggestions />}
       <div className="flex-grow overflow-y-auto mb-4 pb-4">
         {messages.map((message, index) => (

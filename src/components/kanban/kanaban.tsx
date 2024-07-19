@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Column as ColumnType, Task as TaskType } from "./types";
 import Column from "./column";
 import {
@@ -13,18 +13,22 @@ import {
   deleteColumn,
   updateColumn,
 } from "./actions";
+import { KanbanContext } from "@/components/kanban/kanban-wrapper";
 
-export default function Kanban() {
+interface KanbanProps {
+  projectId: string;
+}
+
+export default function Kanban({ projectId }: KanbanProps) {
   const supabase = createClient();
+  const { columns, tasks, setColumns, setTasks } = useContext(KanbanContext);
 
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [columns, setColumns] = useState<ColumnType[]>([]);
-  const [tasks, setTasks] = useState<TaskType[]>([]);
 
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([fetchUser(), fetchColumns(), fetchTasks()])
+    fetchUser()
       .then(() => setIsLoading(false))
       .catch((error) => {
         console.error("Error fetching data:", error);
@@ -35,10 +39,10 @@ export default function Kanban() {
       .channel("schema-db-changes")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "tasks" },
+        { event: "*", schema: "public", table: "projects" },
         (payload) => {
-          console.log("Task change received!", payload);
-          handleTaskChange(payload);
+          console.log("Project change received!", payload);
+          handleProjectChange(payload);
         }
       )
       .on(
@@ -49,12 +53,20 @@ export default function Kanban() {
           handleColumnChange(payload);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks" },
+        (payload) => {
+          console.log("Task change received!", payload);
+          handleTaskChange(payload);
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(tasksSubscription);
     };
-  }, []);
+  }, [projectId]);
 
   async function fetchUser() {
     try {
@@ -92,6 +104,12 @@ export default function Kanban() {
     }
   }
 
+  function handleProjectChange(payload: any) {
+    const { eventType, new: newProject, old: oldProject } = payload;
+    console.log("Project change received!", payload);
+    // Implement your logic to handle project changes
+  }
+
   function handleColumnChange(payload: any) {
     const { eventType, new: newColumn, old: oldColumn } = payload;
     console.log("Column change received!", payload);
@@ -115,23 +133,25 @@ export default function Kanban() {
     const { eventType, new: newTask, old: oldTask } = payload;
     console.log("Task change received!", payload);
     setTasks((prevTasks) => {
+      // Ensure prevTasks is an array
+      const currentTasks = Array.isArray(prevTasks) ? prevTasks : [];
       switch (eventType) {
         case "INSERT":
-          return [...prevTasks, newTask];
+          return [...currentTasks, newTask];
         case "UPDATE":
-          return prevTasks.map((task) =>
+          return currentTasks.map((task) =>
             task.id === newTask.id ? newTask : task
           );
         case "DELETE":
-          return prevTasks.filter((task) => task.id !== oldTask.id);
+          return currentTasks.filter((task) => task.id !== oldTask.id);
         default:
-          return prevTasks;
+          return currentTasks;
       }
     });
   }
 
   return (
-    <main className="p-4">
+    <main className="">
       {isLoading ? (
         <p>Loading...</p>
       ) : (
@@ -155,7 +175,7 @@ export default function Kanban() {
                 }
               />
             ))}
-            <div className="items-center h-fit">
+            {/* <div className="items-center h-fit">
               <Button
                 variant="outline"
                 onClick={() => addColumn(user, "New Column")}
@@ -163,7 +183,7 @@ export default function Kanban() {
               >
                 Add Column
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

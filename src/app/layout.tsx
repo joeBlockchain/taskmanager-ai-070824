@@ -65,7 +65,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="mx-4 md:mx-8 h-screen">{children}</main>
+          <main className="">{children}</main>
           <Toaster />
         </ThemeProvider>
       </body>

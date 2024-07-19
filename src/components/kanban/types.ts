@@ -1,30 +1,29 @@
-// src/components/kanban/types.ts
-import type { UniqueIdentifier } from "@dnd-kit/core";
-
-// Column Types
-export interface Column {
-  id: UniqueIdentifier;
-  title: string;
-}
-
-export type ColumnType = "Column";
-
-export interface ColumnDragData {
-  type: ColumnType;
-  column: Column;
-}
-
-// Task Types
 export interface Task {
-  id: UniqueIdentifier;
-  columnId: Column["id"];
-  title: string;
-  content: string;
-}
+    id: string;
+    user_id: string;
+    column_id: string;
+    title: string;
+    description: string;
+    due_date: string;
+    priority: string;
+    created_at: string;
+    updated_at: string;
+  }
+  
+  export interface Column {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  }
 
-export type TaskType = "Task";
-
-export interface TaskDragData {
-  type: TaskType;
-  task: Task;
-}
+  export interface Project {
+    id: string;
+    user_id: string;
+    name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  }

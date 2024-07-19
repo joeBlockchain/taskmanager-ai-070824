@@ -16,7 +16,7 @@ import Task from "./task";
 import {
   Column as ColumnType,
   Task as TaskType,
-} from "@/app/(workspace)/workspace/types";
+} from "@/components/kanban/types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -50,13 +50,13 @@ export default function Column({
   };
 
   return (
-    <Card key={column.id} className="relative w-[22rem] h-fit group/column">
-      <Button
+    <Card key={column.id} className="relative w-full h-fit group/column">
+      {/* <Button
         variant="outline"
         className="absolute hidden group-hover/column:flex p-0 m-0 w-[1.5rem] -left-[.75rem] top-[.5rem]"
       >
         <GripVertical className="h-4 w-4" />
-      </Button>
+      </Button> */}
       <div className="absolute hidden group-hover/column:flex w-[1.5rem] -right-[.5rem] top-[.5rem] ">
         <div className="flex flex-col space-y-1">
           <Button
@@ -66,13 +66,13 @@ export default function Column({
           >
             <PencilLine className="h-4 w-4" />
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             className="w-[2rem] h-[2rem] p-0 m-0"
             onClick={() => deleteColumn(column.id)}
           >
             <Trash2 className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
       </div>
       <CardHeader>
@@ -132,7 +132,7 @@ export default function Column({
       <CardContent>
         <div className="flex flex-col gap-4">
           {tasks
-            .filter((task) => task.column_id === column.id)
+            ?.filter((task) => task.column_id === column.id)
             .map((task) => (
               <Task
                 key={task.id}

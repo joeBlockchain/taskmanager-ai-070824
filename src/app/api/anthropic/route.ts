@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/utils/supabase/server";
-import { it } from "node:test";
 
 export const runtime = "edge";
 
@@ -21,6 +20,7 @@ type ToolSchema = {
     type: string; 
     items?: {  //used if passing an array of objects
       type: string; 
+      description?: string;
       properties?: Record<string, unknown>;
       required?: string[]; 
     }; 
@@ -265,76 +265,128 @@ const tools: Tool[] = [
   },
   {
     name: "update_task",
-    description: "Updates a task.",
+    description: "Updates one or multiple tasks.",
     schema: {
       type: "object",
       properties: {
-        taskId: {
-          type: "string",
-          description: "The ID of the task to update.",
-        },
-        title: {
-          type: "string",
-          description: "The new title of the task.",
-        },
-        description: {
-          type: "string",
-          description: "The new description of the task.",
-        },
-        due_date: {
-          type: "string",
-          description: "The new due date of the task in ISO 8601 format (YYYY-MM-DD).",
-        },
-        priority: {
-          type: "string",
-          description: "The new priority of the task.",
-          enum: ["urgent", "high", "medium", "low"],
-        },
-        columnId: {
-          type: "string",
-          description: "The ID of the column to move the task to (optional).",
+        tasks: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              taskId: {
+                type: "string",
+                description: "The ID of the task to update.",
+              },
+              title: {
+                type: "string",
+                description: "The new title of the task.",
+              },
+              description: {
+                type: "string",
+                description: "The new description of the task.",
+              },
+              due_date: {
+                type: "string",
+                description: "The new due date of the task in ISO 8601 format (YYYY-MM-DD).",
+              },
+              priority: {
+                type: "string",
+                description: "The new priority of the task.",
+                enum: ["urgent", "high", "medium", "low"],
+              },
+              columnId: {
+                type: "string",
+                description: "The ID of the column to move the task to (optional).",
+              },
+            },
+            required: ["taskId", "title", "description", "due_date", "priority"],
+          },
+          description: "An array of tasks to update.",
         },
       },
-      required: ["taskId", "title", "description", "due_date", "priority"],
+      required: ["tasks"],
     },
-    handler: async ({ taskId, title, description, due_date, priority, columnId }: { taskId: string; title: string; description: string; due_date: string; priority: string; columnId?: string }, userId: string) => {
-      console.log(`Updating task with ID: ${taskId}`);
+    handler: async ({ tasks }: { tasks: { taskId: string; title: string; description: string; due_date: string; priority: string; columnId?: string }[] }, userId: string) => {
+      console.log(`Updating tasks`);
       try {
         const supabase = createClient();
-
+  
         // Fetch available columns
         const { data: columns, error: columnsError } = await supabase
           .from("columns")
           .select("id, title")
           .eq("user_id", userId);
-
+  
         if (columnsError) throw columnsError;
-
-        // Check if the specified columnId exists (if provided)
-        if (columnId) {
-          const columnExists = columns.some(column => column.id === columnId);
-          if (!columnExists) {
-            return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
+  
+        for (const task of tasks) {
+          const { taskId, title, description, due_date, priority, columnId } = task;
+  
+          // Check if the specified columnId exists (if provided)
+          if (columnId) {
+            const columnExists = columns.some(column => column.id === columnId);
+            if (!columnExists) {
+              return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
+            }
           }
+  
+          const updateData: any = { title, description, due_date, priority };
+          if (columnId) {
+            updateData.column_id = columnId;
+          }
+  
+          const { error } = await supabase
+            .from("tasks")
+            .update(updateData)
+            .eq("id", taskId)
+            .eq("user_id", userId);
+  
+          if (error) throw error;
+          console.log(`Task with ID "${taskId}" updated successfully`);
         }
-
-        const updateData: any = { title, description, due_date, priority };
-        if (columnId) {
-          updateData.column_id = columnId;
-        }
-
+  
+        return `Tasks updated successfully.`;
+      } catch (error) {
+        console.error("Error updating tasks:", error);
+        return `Error: Unable to update tasks. ${error}`;
+      }
+    },
+  },
+  {
+    name: "delete_tasks",
+    description: "Deletes one or multiple tasks.",
+    schema: {
+      type: "object",
+      properties: {
+        taskIds: {
+          type: "array",
+          items: {
+            type: "string",
+            description: "The ID of the task to delete.",
+          },
+          description: "An array of task IDs to delete.",
+        },
+      },
+      required: ["taskIds"],
+    },
+    handler: async ({ taskIds }: { taskIds: string[] }, userId: string) => {
+      console.log(`Deleting tasks with IDs: ${taskIds.join(", ")}`);
+      try {
+        const supabase = createClient();
+  
         const { error } = await supabase
           .from("tasks")
-          .update(updateData)
-          .eq("id", taskId)
+          .delete()
+          .in("id", taskIds)
           .eq("user_id", userId);
-
+  
         if (error) throw error;
-        console.log("Task updated successfully");
-        return `Task with ID "${taskId}" updated successfully. Available columns: ${JSON.stringify(columns)}`;
+        console.log("Tasks deleted successfully");
+        return `Tasks with IDs "${taskIds.join(", ")}" deleted successfully.`;
       } catch (error) {
-        console.error("Error updating task:", error);
-        return `Error: Unable to update task. ${error}`;
+        console.error("Error deleting tasks:", error);
+        return `Error: Unable to delete tasks. ${error}`;
       }
     },
   },
@@ -418,56 +470,56 @@ const tools: Tool[] = [
       }
     },
   },
-  {
-    name: "fetch_columns",
-    description: "Fetches all columns for the user.",
-    schema: {
-      type: "object",
-      properties: {},
-      required: [],
-    },
-    handler: async ( userId: string) => {
-      console.log("Fetching columns");
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("columns")
-          .select("*");
+  // {
+  //   name: "fetch_columns",
+  //   description: "Fetches all columns for the user.",
+  //   schema: {
+  //     type: "object",
+  //     properties: {},
+  //     required: [],
+  //   },
+  //   handler: async ( userId: string) => {
+  //     console.log("Fetching columns");
+  //     try {
+  //       const supabase = createClient();
+  //       const { data, error } = await supabase
+  //         .from("columns")
+  //         .select("*");
 
-        if (error) throw error;
-        console.log("Columns fetched successfully:", data);
-        return JSON.stringify(data);
-      } catch (error) {
-        console.error("Error fetching columns:", error);
-        return `Error: Unable to fetch columns. ${error}`;
-      }
-    },
-  },
-  {
-    name: "fetch_tasks",
-    description: "Fetches all tasks for the user.",
-    schema: {
-      type: "object",
-      properties: {},
-      required: [],
-    },
-    handler: async ( userId: string) => {
-      console.log("Fetching tasks");
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("tasks")
-          .select("*");
+  //       if (error) throw error;
+  //       console.log("Columns fetched successfully:", data);
+  //       return JSON.stringify(data);
+  //     } catch (error) {
+  //       console.error("Error fetching columns:", error);
+  //       return `Error: Unable to fetch columns. ${error}`;
+  //     }
+  //   },
+  // },
+  // {
+  //   name: "fetch_tasks",
+  //   description: "Fetches all tasks for the user.",
+  //   schema: {
+  //     type: "object",
+  //     properties: {},
+  //     required: [],
+  //   },
+  //   handler: async ( userId: string) => {
+  //     console.log("Fetching tasks");
+  //     try {
+  //       const supabase = createClient();
+  //       const { data, error } = await supabase
+  //         .from("tasks")
+  //         .select("*");
 
-        if (error) throw error;
-        console.log("Tasks fetched successfully:", data);
-        return JSON.stringify(data);
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
-        return `Error: Unable to fetch tasks. ${error}`;
-      }
-    },
-  },
+  //       if (error) throw error;
+  //       console.log("Tasks fetched successfully:", data);
+  //       return JSON.stringify(data);
+  //     } catch (error) {
+  //       console.error("Error fetching tasks:", error);
+  //       return `Error: Unable to fetch tasks. ${error}`;
+  //     }
+  //   },
+  // },
 ];
 
 
@@ -768,11 +820,21 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const messages = JSON.parse(formData.get("messages") as string);
+  const projectId = formData.get("projectId") as string;
+  const columns = JSON.parse(formData.get("columns") as string);
+  const tasks = JSON.parse(formData.get("tasks") as string);
   const files = formData.getAll("files") as File[];
+
+  console.log("projectId", projectId);
+  console.log("columns", columns);
+  console.log("tasks", tasks);
 
   const fileContent = await processFiles(files);
   const lastUserMessage = messages[messages.length - 1];
   lastUserMessage.content += "\n\n" + fileContent;
+
+  // Append projectId, columns, and tasks to the system message
+  const appendedSystemMessage = `${SYSTEM_MESSAGE}\n\nProject ID: ${projectId}\nColumns: ${JSON.stringify(columns)}\nTasks: ${JSON.stringify(tasks)}`;
 
   // Prepare messages for Anthropic API
   const anthropicMessages = prepareAnthropicMessages(messages);
@@ -784,7 +846,7 @@ export async function POST(req: NextRequest) {
     messages: anthropicMessages,
     stream: true,
     tools: anthropicTools,
-    system: SYSTEM_MESSAGE,
+    system: appendedSystemMessage,
   });
 
   const encoder = new TextEncoder();
