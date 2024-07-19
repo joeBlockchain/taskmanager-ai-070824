@@ -72,6 +72,30 @@ export async function updateTask(
   }
 }
 
+export async function moveTask(
+  taskId: string,
+  newColumnId: string,
+  setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>
+) {
+  try {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ column_id: newColumnId })
+      .eq("id", taskId);
+
+    if (error) throw error;
+
+    // Optimistically update the UI
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? { ...task, column_id: newColumnId } : task
+      )
+    );
+  } catch (error) {
+    console.error("Error moving task:", error);
+  }
+}
+
 export async function deleteColumn(
   columnId: string,
   setColumns: React.Dispatch<React.SetStateAction<ColumnType[]>>,

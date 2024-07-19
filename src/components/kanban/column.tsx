@@ -23,20 +23,24 @@ import { Label } from "@/components/ui/label";
 
 interface ColumnProps {
   column: ColumnType;
+  columns: ColumnType[];
   tasks: TaskType[];
   addTask: (columnId: string) => void;
   deleteTask: (taskId: string) => void;
   updateTask: (taskId: string, title: string, description: string) => void;
+  moveTask: (taskId: string, newColumnId: string) => void;
   deleteColumn: (columnId: string) => void;
   updateColumn: (columnId: string, title: string, description: string) => void;
 }
 
 export default function Column({
   column,
+  columns,
   tasks,
   addTask,
   deleteTask,
   updateTask,
+  moveTask,
   deleteColumn,
   updateColumn,
 }: ColumnProps) {
@@ -139,6 +143,8 @@ export default function Column({
                 task={task}
                 deleteTask={deleteTask}
                 updateTask={updateTask}
+                moveTask={moveTask}
+                columns={columns}
               />
             ))}
         </div>

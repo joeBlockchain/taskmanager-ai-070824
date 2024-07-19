@@ -53,20 +53,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   return (
     <div className="mx-auto">
-      <div className="flex flex-row items-center justify-between my-4">
-        <div className="flex flex-row items-center text-center space-x-4">
-          <Link
-            href={`/workspace/projects`}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>All Projects</span>
-          </Link>
-
-          <h1 className="text-2xl font-bold text-center">{project.name}</h1>
-        </div>
-      </div>
-
       <KanbanWrapper
         projectId={params.projectId}
         initialColumns={columns as ColumnType[]}

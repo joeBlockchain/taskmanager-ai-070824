@@ -25,7 +25,10 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { Task as TaskType } from "@/components/kanban/types";
+import {
+  Task as TaskType,
+  Column as ColumnType,
+} from "@/components/kanban/types";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,12 +38,26 @@ interface TaskProps {
   task: TaskType;
   deleteTask: (taskId: string) => void;
   updateTask: (taskId: string, title: string, description: string) => void;
+  moveTask: (taskId: string, newColumnId: string) => void;
+  columns: ColumnType[];
 }
 
-export default function Task({ task, deleteTask, updateTask }: TaskProps) {
+export default function Task({
+  task,
+  deleteTask,
+  updateTask,
+  moveTask,
+  columns,
+}: TaskProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
+
+  const currentColumnIndex = columns.findIndex(
+    (col) => col.id === task.column_id
+  );
+  const prevColumn = columns[currentColumnIndex - 1];
+  const nextColumn = columns[currentColumnIndex + 1];
 
   const handleSave = () => {
     updateTask(task.id, title, description);
@@ -174,18 +191,26 @@ export default function Task({ task, deleteTask, updateTask }: TaskProps) {
               : "-"}
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="absolute hidden group-hover:flex    w-[1.75rem] h-[1.75rem] p-0 m-0 -left-[.75rem] bottom-[1rem]"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          className="absolute hidden group-hover:flex   w-[1.75rem] h-[1.75rem] p-0 m-0 -right-[.75rem] bottom-[1rem]"
-        >
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        <>
+          {prevColumn && (
+            <Button
+              variant="outline"
+              className="absolute hidden group-hover:flex w-[1.75rem] h-[1.75rem] p-0 m-0 -left-[.75rem] bottom-[1rem]"
+              onClick={() => moveTask(task.id, prevColumn.id)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          {nextColumn && (
+            <Button
+              variant="outline"
+              className="absolute hidden group-hover:flex w-[1.75rem] h-[1.75rem] p-0 m-0 -right-[.75rem] bottom-[1rem]"
+              onClick={() => moveTask(task.id, nextColumn.id)}
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+        </>
       </CardFooter>
     </Card>
   );

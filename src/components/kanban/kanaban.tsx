@@ -3,17 +3,20 @@
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { useState, useEffect, useContext } from "react";
-import { Column as ColumnType, Task as TaskType } from "./types";
+import { Column as ColumnType, Task as TaskType, Project } from "./types";
 import Column from "./column";
 import {
   addColumn,
   addTask,
+  moveTask,
   deleteTask,
   updateTask,
   deleteColumn,
   updateColumn,
 } from "./actions";
 import { KanbanContext } from "@/components/kanban/kanban-wrapper";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 interface KanbanProps {
   projectId: string;
@@ -22,6 +25,7 @@ interface KanbanProps {
 export default function Kanban({ projectId }: KanbanProps) {
   const supabase = createClient();
   const { columns, tasks, setColumns, setTasks } = useContext(KanbanContext);
+  const [project, setProject] = useState<Project | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -34,6 +38,7 @@ export default function Kanban({ projectId }: KanbanProps) {
         console.error("Error fetching data:", error);
         setIsLoading(false);
       });
+    fetchProject();
 
     const tasksSubscription = supabase
       .channel("schema-db-changes")
@@ -82,6 +87,20 @@ export default function Kanban({ projectId }: KanbanProps) {
     }
   }
 
+  async function fetchProject() {
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", projectId)
+        .single();
+      if (error) throw error;
+      setProject(data);
+    } catch (error) {
+      console.error("Error fetching project:", error);
+    }
+  }
+
   async function fetchColumns() {
     try {
       const { data, error } = await supabase.from("columns").select("*");
@@ -107,7 +126,10 @@ export default function Kanban({ projectId }: KanbanProps) {
   function handleProjectChange(payload: any) {
     const { eventType, new: newProject, old: oldProject } = payload;
     console.log("Project change received!", payload);
-    // Implement your logic to handle project changes
+
+    if (eventType === "UPDATE" && newProject.id === projectId) {
+      setProject(newProject);
+    }
   }
 
   function handleColumnChange(payload: any) {
@@ -150,8 +172,27 @@ export default function Kanban({ projectId }: KanbanProps) {
     });
   }
 
+  // ... existing code ...
+
   return (
-    <main className="">
+    <div>
+      <div className="flex flex-row items-center justify-between my-4">
+        <div className="flex flex-row items-center text-center space-x-4">
+          <Link
+            href={`/workspace/projects`}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>All Projects</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-center">
+            {project ? project.name : "Loading..."}:
+          </h1>
+          <h1 className="text-xl text-center text-muted-foreground">
+            {project ? project.description : "Loading..."}
+          </h1>
+        </div>
+      </div>
       {isLoading ? (
         <p>Loading...</p>
       ) : (
@@ -161,11 +202,15 @@ export default function Kanban({ projectId }: KanbanProps) {
               <Column
                 key={column.id}
                 column={column}
+                columns={columns}
                 tasks={tasks}
                 addTask={(columnId) => addTask(columnId, user)}
                 deleteTask={(taskId) => deleteTask(taskId, setTasks)}
                 updateTask={(taskId, title, description) =>
                   updateTask(taskId, title, description, setTasks)
+                }
+                moveTask={(taskId, newColumnId) =>
+                  moveTask(taskId, newColumnId, setTasks)
                 }
                 deleteColumn={(columnId) =>
                   deleteColumn(columnId, setColumns, setTasks)
@@ -187,6 +232,6 @@ export default function Kanban({ projectId }: KanbanProps) {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
