@@ -8,7 +8,8 @@ export interface Task {
     priority: string;
     created_at: string;
     updated_at: string;
-  }
+    deliverables?: Deliverable[]; 
+}
   
   export interface Column {
     id: string;
@@ -26,4 +27,18 @@ export interface Task {
     description: string;
     created_at: string;
     updated_at: string;
+  }
+
+  export interface Deliverable {
+    id: string;
+    task_id: string;
+    user_id: string;
+    title: string;
+    description?: string;
+    status: 'Not Started' | 'In Progress' | 'Completed' | 'Approved' | 'Rejected';
+    due_date?: string;
+    file_url?: string;
+    created_at: string;
+    updated_at: string;
+    is_archived: boolean;
   }

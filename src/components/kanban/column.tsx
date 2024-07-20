@@ -54,7 +54,7 @@ export default function Column({
   };
 
   return (
-    <Card key={column.id} className="relative w-full h-fit group/column">
+    <Card key={column.id} className="relative w-[25rem] h-fit group/column">
       {/* <Button
         variant="outline"
         className="absolute hidden group-hover/column:flex p-0 m-0 w-[1.5rem] -left-[.75rem] top-[.5rem]"

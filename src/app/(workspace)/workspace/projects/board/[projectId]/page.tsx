@@ -42,14 +42,33 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     .select("*")
     .eq("project_id", params.projectId);
 
-  const { data: tasks, error: tasksError } = await supabase
-    .from("tasks")
-    .select("*")
-    .eq("project_id", params.projectId);
-
   if (projectError || !project) {
     notFound();
   }
+
+  const tasksPromises =
+    columns?.map(async (column: ColumnType) => {
+      const { data: tasks, error: tasksError } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("column_id", column.id);
+
+      if (tasksError) {
+        console.error(
+          `Error fetching tasks for column ${column.id}:`,
+          tasksError
+        );
+        return [];
+      }
+
+      return tasks;
+    }) ?? [];
+
+  const tasksArray = await Promise.all(tasksPromises);
+  const tasks = tasksArray.flat();
+
+  console.log("columns", columns);
+  console.log("tasks", tasks);
 
   return (
     <div className="mx-auto">

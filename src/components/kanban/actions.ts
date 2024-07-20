@@ -22,12 +22,16 @@ export async function addColumn(user: any, title: string) {
 
 export async function addTask(columnId: string, user: any) {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("tasks")
-      .insert({ title: "New Task", column_id: columnId, user_id: user.id });
+      .insert({ title: "New Task", column_id: columnId, user_id: user.id })
+      .select()
+      .single();
     if (error) throw error;
+    return data;
   } catch (error) {
     console.error("Error adding task:", error);
+    return null;
   }
 }
 
@@ -152,5 +156,40 @@ export async function updateColumn(
     );
   } catch (error) {
     console.error("Error updating column:", error);
+  }
+}
+export async function addDeliverable(taskId: string, userId: string, title: string, status: string, description?: string, dueDate?: string) {
+  console.log("taskId:", taskId);
+  console.log("user:", userId);
+  console.log("title:", title);
+  console.log("status:", status);
+  console.log("description:", description);
+  console.log("dueDate:", dueDate);
+  try {
+    const { data, error } = await supabase
+      .from("deliverables")
+      .insert({
+        task_id: taskId,
+        user_id: userId,
+        title,
+        status,
+        description,
+        due_date: dueDate,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_archived: false
+      })
+      .select();
+
+
+console.log("data:", data)
+console.log("error:", error)
+
+    if (error) throw error;
+    return data[0];
+  } catch (error) {
+    console.log(error)
+    console.error("Error adding deliverable:", error);
+    return null;
   }
 }

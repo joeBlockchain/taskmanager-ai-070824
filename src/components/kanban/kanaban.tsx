@@ -171,9 +171,6 @@ export default function Kanban({ projectId }: KanbanProps) {
       }
     });
   }
-
-  // ... existing code ...
-
   return (
     <div>
       <div className="flex flex-row items-center justify-between my-4">

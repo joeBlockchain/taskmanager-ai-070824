@@ -33,6 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import TaskEdit from "./task-edit";
 
 interface TaskProps {
   task: TaskType;
@@ -49,19 +50,14 @@ export default function Task({
   moveTask,
   columns,
 }: TaskProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description);
-
   const currentColumnIndex = columns.findIndex(
     (col) => col.id === task.column_id
   );
   const prevColumn = columns[currentColumnIndex - 1];
   const nextColumn = columns[currentColumnIndex + 1];
 
-  const handleSave = () => {
-    updateTask(task.id, title, description);
-    setIsEditing(false);
+  const handleUpdate = (updatedTask: TaskType) => {
+    updateTask(updatedTask.id, updatedTask.title, updatedTask.description);
   };
 
   return (
@@ -74,13 +70,7 @@ export default function Task({
       </Button>
       <div className="absolute hidden group-hover:flex  w-[1.5rem] -right-[.5rem] top-[.5rem] ">
         <div className="flex flex-col space-y-1">
-          <Button
-            variant="outline"
-            className="w-[2rem] h-[2rem] p-0 m-0"
-            onClick={() => setIsEditing(true)}
-          >
-            <PencilLine className="h-4 w-4" />
-          </Button>
+          <TaskEdit task={task} onUpdate={handleUpdate} />
           <Button
             variant="outline"
             className="w-[2rem] h-[2rem] p-0 m-0"
@@ -91,50 +81,7 @@ export default function Task({
         </div>
       </div>
       <CardHeader className="px-6 py-2 m-0">
-        {isEditing ? (
-          <div className="flex flex-col gap-4">
-            <div className="grid items-center gap-1.5">
-              <Label htmlFor="title" className="text-muted-foreground">
-                Task Title
-              </Label>
-              <Input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className=""
-              />
-            </div>
-            <div className="grid items-center gap-1.5">
-              <Label htmlFor="description" className="text-muted-foreground">
-                Task Description
-              </Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className=""
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button
-                variant="secondary"
-                className="px-2 m-0 h-[2rem]"
-                onClick={handleSave}
-              >
-                <Check className="h-4 w-4 mr-2" /> Save
-              </Button>
-              <Button
-                variant="destructive"
-                className="px-2 m-0 h-[2rem]"
-                onClick={() => setIsEditing(false)}
-              >
-                <X className="h-4 w-4 mr-2" /> Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <CardTitle className="text-lg">{task.title}</CardTitle>
-        )}
+        <CardTitle className="text-lg">{task.title}</CardTitle>
       </CardHeader>
       <Separator />
       <CardContent className="px-6 py-2 m-0 text-muted-foreground space-y-3">
