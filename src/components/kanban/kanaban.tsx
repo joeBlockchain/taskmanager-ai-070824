@@ -44,15 +44,11 @@ export default function Kanban({ projectId }: KanbanProps) {
   useEffect(() => {
     setIsLoading(true);
     fetchUser()
-      .then(() => setIsLoading(false))
+      .then(() => fetchProject())
       .catch((error) => {
         console.error("Error fetching data:", error);
-        setIsLoading(false);
-      });
-    fetchProject();
-    fetchColumns();
-    fetchTasks();
-    fetchDeliverables();
+      })
+      .finally(() => setIsLoading(false));
 
     const subscription = supabase
       .channel("schema-db-changes")
@@ -118,37 +114,50 @@ export default function Kanban({ projectId }: KanbanProps) {
         .single();
       if (error) throw error;
       setProject(data);
+      // After successfully fetching the project, fetch the columns
+      await fetchColumns();
     } catch (error) {
       console.error("Error fetching project:", error);
+      setIsLoading(false);
     }
   }
 
   async function fetchColumns() {
     try {
-      const { data, error } = await supabase.from("columns").select("*");
-      console.log("columns", data);
+      const { data, error } = await supabase
+        .from("columns")
+        .select("*")
+        .eq("project_id", projectId);
       if (error) throw error;
       setColumns(data);
+      // After fetching columns, fetch tasks for these columns
+      await fetchTasks(data.map((column) => column.id));
     } catch (error) {
       console.error("Error fetching columns:", error);
     }
   }
 
-  async function fetchTasks() {
+  async function fetchTasks(columnIds: string[]) {
     try {
-      const { data, error } = await supabase.from("tasks").select("*");
-      console.log("tasks", data);
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .in("column_id", columnIds);
       if (error) throw error;
       setTasks(data);
+      // After fetching tasks, fetch deliverables for these tasks
+      fetchDeliverables(data.map((task) => task.id));
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
   }
 
-  async function fetchDeliverables() {
+  async function fetchDeliverables(taskIds: string[]) {
     try {
-      const { data, error } = await supabase.from("deliverables").select("*");
-      console.log("deliverables", data);
+      const { data, error } = await supabase
+        .from("deliverables")
+        .select("*")
+        .in("task_id", taskIds);
       if (error) throw error;
       setDeliverables(data);
     } catch (error) {
