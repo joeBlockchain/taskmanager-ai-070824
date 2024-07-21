@@ -62,7 +62,7 @@ export default function KanbanWrapper({
     >
       <Kanban projectId={projectId} />
       <Popover>
-        <PopoverTrigger className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg border-border border flex items-center justify-center">
+        <PopoverTrigger className="fixed bottom-4 right-4 h-14 w-14 rounded-full drop-shadow-xl border-primary/80 border flex items-center justify-center bg-background">
           <MessageSquare className="h-6 w-6" aria-hidden="true" />
         </PopoverTrigger>
         <PopoverContent className="h-[calc(100vh-7rem)] w-[28rem]">
