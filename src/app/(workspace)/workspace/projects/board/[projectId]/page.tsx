@@ -4,15 +4,8 @@ import KanbanWrapper from "@/components/kanban/kanban-wrapper";
 import {
   Column as ColumnType,
   Task as TaskType,
+  Deliverable as DeliverableType,
 } from "@/components/kanban/types";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-
-interface Project {
-  id: string;
-  name: string;
-  created_at: string;
-}
 
 interface ProjectPageProps {
   params: {
@@ -39,6 +32,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const { data: columns, error: columnsError } = await supabase
     .from("columns")
+    .select("*")
+    .eq("project_id", params.projectId);
+
+  const { data: deliverables, error: deliverablesError } = await supabase
+    .from("deliverables")
     .select("*")
     .eq("project_id", params.projectId);
 
@@ -73,6 +71,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         projectId={params.projectId}
         initialColumns={columns as ColumnType[]}
         initialTasks={tasks as TaskType[]}
+        initialDeliverables={deliverables as DeliverableType[]}
       />
     </div>
   );
