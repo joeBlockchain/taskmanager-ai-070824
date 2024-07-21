@@ -39,7 +39,7 @@ console.log(data)
     if (error) throw error;
 
     // Optimistically update the UI
-    setTasks((prevTasks) => [...prevTasks, data]);
+    // setTasks((prevTasks) => [...prevTasks, data]);
     return data;
   } catch (error) {
     console.error("Error adding task:", error);
