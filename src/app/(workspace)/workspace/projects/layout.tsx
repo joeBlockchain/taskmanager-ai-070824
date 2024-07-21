@@ -7,14 +7,14 @@ import { PropsWithChildren } from "react";
 
 export default function ApplicationLayout({ children }: PropsWithChildren) {
   return (
-    <div>
+    <div className="p-4">
       {/* Add your application-specific layout components */}
       {/* <nav> </nav> */}
-      <div className="flex flex-row items-center justify-between my-4">
+      <div className="flex flex-row items-center justify-between mb-4">
         <div className="flex flex-row items-center text-center space-x-4">
-          <h1 className="text-2xl font-bold text-center">Projects</h1>
+          <h1 className="text-2xl font-bold text-center">My Projects</h1>
         </div>
-        <AuthButton />
+        <AuthButton size="small" />
       </div>
       {children}
       {/* <footer></footer> */}

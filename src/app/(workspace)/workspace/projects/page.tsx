@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { PlusIcon, TrashIcon, PencilLine, Check, X } from "lucide-react";
+import {
+  PlusIcon,
+  TrashIcon,
+  PencilLine,
+  Check,
+  X,
+  Kanban,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -185,11 +192,11 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button
-            variant="outline"
-            className="flex items-center justify-center h-32"
+            className="flex items-center justify-center h-[9rem] text-muted-foreground bg-secondary/80 hover:bg-secondary/60 border border-primary/20"
             onClick={createProject}
           >
-            <PlusIcon className="mr-2 h-4 w-4" /> New Project
+            <Kanban className="mr-2 " />
+            <h3 className="text-xl leading-none tracking-tight">New Project</h3>
           </Button>
           {projects.map((project: Project) => (
             <Card

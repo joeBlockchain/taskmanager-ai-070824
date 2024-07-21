@@ -257,18 +257,15 @@ export default function Kanban({ projectId }: KanbanProps) {
             <span>All Projects</span>
           </Link>
           <h1 className="text-2xl font-bold text-center">
-            {project ? project.name : "Loading..."}:
-          </h1>
-          <h1 className="text-xl text-center text-muted-foreground">
-            {project ? project.description : "Loading..."}
+            {project ? project.name : "Loading..."}
           </h1>
         </div>
       </div>
       {isLoading ? (
         <p>Loading...</p>
       ) : (
-        <div className="overflow-x-auto">
-          <div className="flex flex-row gap-4 min-w-max">
+        <div className="">
+          <div className="flex flex-row gap-4">
             {columns.map((column) => (
               <Column
                 key={column.id}
