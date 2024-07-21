@@ -146,118 +146,14 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "add_task",
-    description: "Adds a new task to a column, optionally with deliverables.",
+    name: "add_tasks",
+    description: "Adds one or multiple tasks to a column. Use this for adding any number of tasks, including just one task.",
     schema: {
       type: "object",
       properties: {
         columnId: {
           type: "string",
-          description: "The ID of the column to add the task to.",
-        },
-        title: {
-          type: "string",
-          description: "The title of the new task.",
-        },
-        description: {
-          type: "string",
-          description: "The description of the new task.",
-        },
-        due_date: {
-          type: "string",
-          description: "The due date of the new task in ISO 8601 format (YYYY-MM-DD).",
-        },
-        priority: {
-          type: "string",
-          description: "The priority of the new task.",
-          enum: ["urgent", "high", "medium", "low"],
-        },
-        deliverables: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              title: {
-                type: "string",
-                description: "The title of the deliverable.",
-              },
-              description: {
-                type: "string",
-                description: "The description of the deliverable.",
-              },
-              due_date: {
-                type: "string",
-                description: "The due date of the deliverable in ISO 8601 format (YYYY-MM-DD).",
-              },
-              status: {
-                type: "string",
-                description: "The status of the deliverable.",
-                enum: ["Not Started", "In Progress", "Completed", "Approved", "Rejected"],
-              },
-            },
-            required: ["title", "status"],
-          },
-          description: "An array of deliverables to add with the task.",
-        },
-      },
-      required: ["columnId", "title", "description", "due_date", "priority"],
-    },
-    handler: async ({ columnId, title, description, due_date, priority, deliverables }: { columnId: string; title: string; description: string; due_date: string; priority: string; deliverables?: { title: string; description: string; due_date: string; status: string }[] }, userId: string) => {
-      console.log(`Adding task with title: ${title} to column: ${columnId}`);
-      try {
-        const supabase = createClient();
-        
-        // Fetch available columns
-        const { data: columns, error: columnsError } = await supabase
-          .from("columns")
-          .select("id, title")
-          .eq("user_id", userId);
-
-        if (columnsError) throw columnsError;
-
-        // Check if the specified columnId exists
-        const columnExists = columns.some(column => column.id === columnId);
-        if (!columnExists) {
-          return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
-        }
-
-        // Add the task
-        const { data: taskData, error: taskError } = await supabase
-          .from("tasks")
-          .insert({ title, column_id: columnId, user_id: userId, description, due_date, priority })
-          .select();
-
-        if (taskError) throw taskError;
-
-        const taskId = taskData[0].id;
-
-        // Add deliverables if provided
-        if (deliverables && deliverables.length > 0) {
-          const deliverableData = deliverables.map(deliverable => ({ ...deliverable, task_id: taskId, user_id: userId }));
-          const { error: deliverableError } = await supabase
-            .from("deliverables")
-            .insert(deliverableData);
-
-          if (deliverableError) throw deliverableError;
-        }
-
-        console.log("Task and deliverables added successfully");
-        return `Task "${title}" added successfully to column "${columnId}". Available columns: ${JSON.stringify(columns)}`;
-      } catch (error) {
-        console.error("Error adding task and deliverables:", error);
-        return `Error: Unable to add task and deliverables. ${error}`;
-      }
-    },
-  },
-  {
-    name: "add_multiple_tasks",
-    description: "Adds multiple tasks to a column, optionally with deliverables.",
-    schema: {
-      type: "object",
-      properties: {
-        columnId: {
-          type: "string",
-          description: "The ID of the column to add the tasks to.",
+          description: "The ID of the column to add the task(s) to.",
         },
         tasks: {
           type: "array",
@@ -311,7 +207,7 @@ const tools: Tool[] = [
             },
             required: ["title", "description", "due_date", "priority"],
           },
-          description: "An array of tasks to add.",
+          description: "An array of tasks to add. For a single task, use an array with one object.",
         },
       },
       required: ["columnId", "tasks"],
@@ -368,8 +264,9 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "update_task",
-    description: "Updates one or multiple tasks.",
+    name: "update_task_properties",
+    description: "Updates one or multiple tasks' main properties (title, description, due date, priority, column). Does not modify task deliverables.",
+
     schema: {
       type: "object",
       properties: {
@@ -494,6 +391,170 @@ const tools: Tool[] = [
       }
     },
   },
+  {
+    name: "manage_task_deliverables",
+    description: "Manages deliverables for a task. Can add new deliverables, update existing ones, delete deliverables from a task, or transfer deliverables between tasks.",
+    schema: {
+      type: "object",
+      properties: {
+        taskId: {
+          type: "string",
+          description: "The ID of the task to manage deliverables for.",
+        },
+        operations: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              operation: {
+                type: "string",
+                enum: ["add", "update", "delete", "transfer"],
+                description: "The operation to perform on the deliverable.",
+              },
+              deliverable: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "string",
+                    description: "The ID of the deliverable (required for update, delete, and transfer operations).",
+                  },
+                  title: {
+                    type: "string",
+                    description: "The title of the deliverable.",
+                  },
+                  description: {
+                    type: "string",
+                    description: "The description of the deliverable.",
+                  },
+                  due_date: {
+                    type: "string",
+                    description: "The due date of the deliverable in ISO 8601 format (YYYY-MM-DD).",
+                  },
+                  status: {
+                    type: "string",
+                    enum: ["Not Started", "In Progress", "Completed", "Approved", "Rejected"],
+                    description: "The status of the deliverable.",
+                  },
+                },
+                required: ["title", "status"],
+              },
+              newTaskId: {
+                type: "string",
+                description: "The ID of the new task to transfer the deliverable to (required for transfer operation).",
+              },
+            },
+            required: ["operation", "deliverable"],
+          },
+          description: "An array of operations to perform on deliverables.",
+        },
+      },
+      required: ["taskId", "operations"],
+    },
+    handler: async ({ taskId, operations }, userId) => {
+      console.log(`Managing deliverables for task ${taskId}`);
+      try {
+        const supabase = createClient();
+  
+        // Check if the task exists and belongs to the user
+        const { data: task, error: taskError } = await supabase
+          .from("tasks")
+          .select("id")
+          .eq("id", taskId)
+          .eq("user_id", userId)
+          .single();
+
+        console.log("task", task);
+        console.log("taskError", taskError);
+  
+        if (taskError || !task) {
+          return `Error: with "${taskId}". TaskError: ${JSON.stringify(taskError)}`;
+        }
+  
+        for (const op of operations) {
+          const { operation, deliverable, newTaskId } = op;
+          console.log("operation", operation);
+          console.log("deliverable", deliverable);
+  
+          switch (operation) {
+            case "add":
+              const { error: addError } = await supabase
+                .from("deliverables")
+                .insert({ ...deliverable, task_id: taskId, user_id: userId });
+              if (addError) throw addError;
+              console.log(`Added deliverable "${deliverable.title}" to task ${taskId}`);
+              break;
+  
+            case "update":
+              if (!deliverable.id) {
+                console.error("Deliverable ID is required for update operation");
+                continue;
+              }
+              console.log("deliverable", deliverable);
+              const { error: updateError } = await supabase
+                .from("deliverables")
+                .update(deliverable)
+                .eq("id", deliverable.id)
+                .eq("task_id", taskId)
+                .eq("user_id", userId);
+              if (updateError) throw updateError;
+              console.log(`Updated deliverable ${deliverable.id} for task ${taskId}`);
+              break;
+  
+            case "delete":
+              if (!deliverable.id) {
+                console.error("Deliverable ID is required for delete operation");
+                continue;
+              }
+              const { error: deleteError } = await supabase
+                .from("deliverables")
+                .delete()
+                .eq("id", deliverable.id)
+                .eq("task_id", taskId)
+                .eq("user_id", userId);
+              if (deleteError) throw deleteError;
+              console.log(`Deleted deliverable ${deliverable.id} from task ${taskId}`);
+              break;
+  
+            case "transfer":
+              if (!deliverable.id || !newTaskId) {
+                console.error("Deliverable ID and new task ID are required for transfer operation");
+                continue;
+              }
+              // Check if the new task exists and belongs to the user
+              const { data: newTask, error: newTaskError } = await supabase
+                .from("tasks")
+                .select("id")
+                .eq("id", newTaskId)
+                .eq("user_id", userId)
+                .single();
+
+              if (newTaskError || !newTask) {
+                console.error(`Error: New task "${newTaskId}" not found or doesn't belong to the user`);
+                continue;
+              }
+
+              const { error: transferError } = await supabase
+                .from("deliverables")
+                .update({ task_id: newTaskId })
+                .eq("id", deliverable.id)
+                .eq("user_id", userId);
+
+              if (transferError) throw transferError;
+              console.log(`Transferred deliverable ${deliverable.id} from task ${taskId} to task ${newTaskId}`);
+              break;
+  
+            default:
+              console.error(`Unknown operation: ${operation}`);
+          }
+        }
+  
+        return `Deliverables for task ${taskId} managed successfully.`;
+      } catch (error) {
+        console.error("Error managing task deliverables:", error);
+        return `Error: Unable to manage task deliverable. Error: ${JSON.stringify(error)}`;
+      }
+    },
+  }, 
   // {
   //   name: "add_column",
   //   description: "Adds a new column for the user.",
@@ -956,23 +1017,27 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const messages = JSON.parse(formData.get("messages") as string);
   const projectId = formData.get("projectId") as string;
-  const columns = JSON.parse(formData.get("columns") as string);
-  const tasks = JSON.parse(formData.get("tasks") as string);
+  const nestedData = JSON.parse(formData.get("nestedData") as string);
   const files = formData.getAll("files") as File[];
 
   console.log("projectId", projectId);
-  console.log("columns", columns);
-  console.log("tasks", tasks);
+  console.log("nestedData", nestedData);
 
   const fileContent = await processFiles(files);
   const lastUserMessage = messages[messages.length - 1];
   lastUserMessage.content += "\n\n" + fileContent;
 
-  // Append projectId, columns, and tasks to the system message
-  const appendedSystemMessage = `${SYSTEM_MESSAGE}\n\nProject ID: ${projectId}\nColumns: ${JSON.stringify(columns)}\nTasks: ${JSON.stringify(tasks)}`;
+  // Append projectId and nestedData to the system message
+  const appendedSystemMessage = `${SYSTEM_MESSAGE}\n\nProject Data:\n${JSON.stringify({
+    projectId,
+    columns: nestedData,
+  }, null, 2)}`;
+
+  console.log("appendedSystemMessage", appendedSystemMessage);
 
   // Prepare messages for Anthropic API
   const anthropicMessages = prepareAnthropicMessages(messages);
+
 
   const stream = await anthropic.messages.create({
     model: "claude-3-5-sonnet-20240620",
