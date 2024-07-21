@@ -12,7 +12,7 @@ export default function ApplicationLayout({ children }: PropsWithChildren) {
       {/* <nav> </nav> */}
       <div className="flex flex-row items-center justify-between mb-4">
         <div className="flex flex-row items-center text-center space-x-4">
-          <h1 className="text-2xl font-bold text-center">My Projects</h1>
+          <h1 className="text-2xl font-bold text-center">Projects</h1>
         </div>
         <AuthButton size="small" />
       </div>
