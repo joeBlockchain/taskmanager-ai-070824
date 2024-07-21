@@ -40,7 +40,7 @@ export default function Kanban({ projectId }: KanbanProps) {
       });
     fetchProject();
 
-    const tasksSubscription = supabase
+    const subscription = supabase
       .channel("schema-db-changes")
       .on(
         "postgres_changes",
@@ -66,10 +66,18 @@ export default function Kanban({ projectId }: KanbanProps) {
           handleTaskChange(payload);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deliverables" },
+        (payload) => {
+          console.log("Deliverable change received!", payload);
+          handleDeliverableChange(payload);
+        }
+      )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(tasksSubscription);
+      supabase.removeChannel(subscription);
     };
   }, [projectId]);
 
@@ -169,6 +177,37 @@ export default function Kanban({ projectId }: KanbanProps) {
         default:
           return currentTasks;
       }
+    });
+  }
+
+  function handleDeliverableChange(payload: any) {
+    const { eventType, new: newDeliverable, old: oldDeliverable } = payload;
+    console.log("Deliverable change received", payload);
+    setTasks((prevTasks) => {
+      return prevTasks.map((task) => {
+        if (task.id === newDeliverable.task_id) {
+          let updatedDeliverables = task.deliverables || [];
+          switch (eventType) {
+            case "INSERT":
+              updatedDeliverables = [...updatedDeliverables, newDeliverable];
+              break;
+            case "UPDATE":
+              updatedDeliverables = updatedDeliverables.map((deliverable) =>
+                deliverable.id === newDeliverable.id
+                  ? newDeliverable
+                  : deliverable
+              );
+              break;
+            case "DELETE":
+              updatedDeliverables = updatedDeliverables.filter(
+                (deliverable) => deliverable.id !== oldDeliverable.id
+              );
+              break;
+          }
+          return { ...task, deliverables: updatedDeliverables };
+        }
+        return task;
+      });
     });
   }
 

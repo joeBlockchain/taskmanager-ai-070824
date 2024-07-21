@@ -92,22 +92,6 @@ export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
   useEffect(() => {
     fetchDeliverables();
     fetchUser();
-
-    const deliverablesSubscription = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "deliverables" },
-        (payload) => {
-          console.log("Deliverable change received!", payload);
-          handleDeliverableChange(payload);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(deliverablesSubscription);
-    };
   }, [task.id]);
 
   async function fetchUser() {
@@ -136,29 +120,6 @@ export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
     } catch (error) {
       console.error("Error fetching deliverables:", error);
     }
-  };
-
-  const handleDeliverableChange = (payload: any) => {
-    const { eventType, new: newDeliverable, old: oldDeliverable } = payload;
-    setDeliverables((prevDeliverables) => {
-      const currentDeliverables = Array.isArray(prevDeliverables)
-        ? prevDeliverables
-        : [];
-      switch (eventType) {
-        case "INSERT":
-          return [...currentDeliverables, newDeliverable];
-        case "UPDATE":
-          return currentDeliverables.map((deliverable) =>
-            deliverable.id === newDeliverable.id ? newDeliverable : deliverable
-          );
-        case "DELETE":
-          return currentDeliverables.filter(
-            (deliverable) => deliverable.id !== oldDeliverable.id
-          );
-        default:
-          return currentDeliverables;
-      }
-    });
   };
 
   const handleSave = async () => {
@@ -224,7 +185,7 @@ export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
       setNewDeliverable(null);
       setDeliverables((prev) => [...prev, result.newDeliverable]);
       // Update the task if it's the one we just added a deliverable to
-      if (result.updatedTaskId === task.id) {
+      if (result.updatedTask?.id === task.id) {
         onUpdate({
           ...task,
           deliverables: [...(task.deliverables || []), result.newDeliverable],

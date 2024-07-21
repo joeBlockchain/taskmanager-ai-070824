@@ -17,6 +17,8 @@ export async function addColumn(user: any, title: string, setColumns: React.Disp
 
     if (error) throw error;
 
+    // Optimistically update the UI
+    setColumns((prevColumns) => [...prevColumns, data]);
     return data;
   } catch (error) {
     console.error("Error adding column:", error);
@@ -32,8 +34,12 @@ export async function addTask(columnId: string, user: any, setTasks: React.Dispa
       .select()
       .single();
 
+console.log(data)
+
     if (error) throw error;
 
+    // Optimistically update the UI
+    setTasks((prevTasks) => [...prevTasks, data]);
     return data;
   } catch (error) {
     console.error("Error adding task:", error);
@@ -50,6 +56,8 @@ export async function deleteTask(
 
     if (error) throw error;
 
+    // Optimistically update the UI
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
   } catch (error) {
     console.error("Error deleting task:", error);
   }
@@ -69,6 +77,12 @@ export async function updateTask(
 
     if (error) throw error;
 
+    // Optimistically update the UI
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? { ...task, title, description } : task
+      )
+    );
   } catch (error) {
     console.error("Error updating task:", error);
   }
@@ -87,6 +101,12 @@ export async function moveTask(
 
     if (error) throw error;
 
+    // Optimistically update the UI
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? { ...task, column_id: newColumnId } : task
+      )
+    );
   } catch (error) {
     console.error("Error moving task:", error);
   }
@@ -114,6 +134,13 @@ export async function deleteColumn(
 
     if (columnError) throw columnError;
 
+    // Optimistically update the UI
+    setColumns((prevColumns) =>
+      prevColumns.filter((column) => column.id !== columnId)
+    );
+    setTasks((prevTasks) =>
+      prevTasks.filter((task) => task.column_id !== columnId)
+    );
   } catch (error) {
     console.error("Error deleting column:", error);
   }
@@ -133,6 +160,12 @@ export async function updateColumn(
 
     if (error) throw error;
 
+    // Optimistically update the UI
+    setColumns((prevColumns) =>
+      prevColumns.map((column) =>
+        column.id === columnId ? { ...column, title, description } : column
+      )
+    );
   } catch (error) {
     console.error("Error updating column:", error);
   }
@@ -167,7 +200,22 @@ export async function addDeliverable(
 
     if (error) throw error;
 
-    return { newDeliverable, updatedTaskId: taskId };
+    // Update the tasks state
+    let updatedTask: TaskType | undefined;
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id === taskId) {
+          updatedTask = {
+            ...task,
+            deliverables: [...(task.deliverables || []), newDeliverable],
+          };
+          return updatedTask;
+        }
+        return task;
+      })
+    );
+
+    return { newDeliverable, updatedTask };
   } catch (error) {
     console.error("Error adding deliverable:", error);
     return null;
