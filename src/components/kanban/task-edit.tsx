@@ -121,7 +121,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveTaskEdit = async () => {
     try {
       const updatedTask = {
         ...task,
@@ -146,7 +146,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancelTaskEdit = () => {
     setTitle(task.title);
     setDescription(task.description);
     setDueDate(task.due_date ? new Date(task.due_date) : undefined);
@@ -164,9 +164,6 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
   };
 
   const handleSaveDeliverable = async () => {
-    console.log("taskid", task.id);
-    console.log("newDeliverable", newDeliverable);
-
     if (!newDeliverable || !newDeliverable.title || !user) return;
 
     const result = await addDeliverable(
@@ -208,7 +205,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
     }
   };
 
-  const handleCancelEdit = () => {
+  const handleCancelEditDeliverable = () => {
     setEditingDeliverable(null);
   };
 
@@ -468,7 +465,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={handleCancelEdit}
+                                    onClick={handleCancelEditDeliverable}
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
@@ -690,10 +687,10 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
+          <Button variant="outline" onClick={handleCancelTaskEdit}>
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="secondary">
+          <Button onClick={handleSaveTaskEdit} variant="secondary">
             Save
           </Button>
         </AlertDialogFooter>
