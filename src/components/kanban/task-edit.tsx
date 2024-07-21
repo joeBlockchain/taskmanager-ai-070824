@@ -123,8 +123,9 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
 
   const handleSaveTaskEdit = async () => {
     try {
+      const { deliverables, ...taskWithoutDeliverables } = task;
       const updatedTask = {
-        ...task,
+        ...taskWithoutDeliverables,
         title,
         description,
         due_date: dueDate ? dueDate.toISOString() : null,
@@ -132,10 +133,15 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
         updated_at: new Date().toISOString(),
       };
 
+      console.log("updatedTask", updatedTask);
+
       const { data, error } = await supabase
         .from("tasks")
         .update(updatedTask)
         .eq("id", task.id);
+
+      console.log("data", data);
+      console.log("error", error);
 
       if (error) throw error;
 
