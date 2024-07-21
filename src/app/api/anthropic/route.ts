@@ -554,6 +554,95 @@ const tools: Tool[] = [
         return `Error: Unable to manage task deliverable. Error: ${JSON.stringify(error)}`;
       }
     },
+  },
+  {
+    name: "manage_deliverable_content",
+    description: "Manages content for a deliverable. Can create new content, update existing content, or fetch content for a deliverable.",
+    schema: {
+      type: "object",
+      properties: {
+        operation: {
+          type: "string",
+          enum: ["create", "update", "fetch"],
+          description: "The operation to perform on the deliverable content.",
+        },
+        deliverableId: {
+          type: "string",
+          description: "The ID of the deliverable to manage content for.",
+        },
+        content: {
+          type: "string",
+          description: "The content of the deliverable (required for create and update operations).",
+        },
+      },
+      required: ["operation", "deliverableId"],
+    },
+    handler: async ({ operation, deliverableId, content }, userId: string) => {
+      console.log(`Managing content for deliverable ${deliverableId}`);
+      try {
+        const supabase = createClient();
+  
+        // Check if the deliverable exists and belongs to the user
+        const { data: deliverable, error: deliverableError } = await supabase
+          .from("deliverables")
+          .select("id")
+          .eq("id", deliverableId)
+          .eq("user_id", userId)
+          .single();
+  
+        if (deliverableError || !deliverable) {
+          return `Error: Deliverable with ID "${deliverableId}" not found or doesn't belong to the user.`;
+        }
+  
+        switch (operation) {
+          case "create":
+            if (!content) {
+              return "Error: Content is required for create operation.";
+            }
+            const { data: createData, error: createError } = await supabase
+              .from("deliverable_content")
+              .insert({ deliverable_id: deliverableId, content })
+              .select()
+              .single();
+  
+            if (createError) throw createError;
+            console.log(`Created content for deliverable ${deliverableId}`);
+            return `Content created successfully for deliverable ${deliverableId}. Content ID: ${createData.id}`;
+  
+          case "update":
+            if (!content) {
+              return "Error: Content is required for update operation.";
+            }
+            const { data: updateData, error: updateError } = await supabase
+              .from("deliverable_content")
+              .update({ content })
+              .eq("deliverable_id", deliverableId)
+              .select()
+              .single();
+  
+            if (updateError) throw updateError;
+            console.log(`Updated content for deliverable ${deliverableId}`);
+            return `Content updated successfully for deliverable ${deliverableId}. Content ID: ${updateData.id}`;
+  
+          case "fetch":
+            const { data: fetchData, error: fetchError } = await supabase
+              .from("deliverable_content")
+              .select("content")
+              .eq("deliverable_id", deliverableId)
+              .single();
+  
+            if (fetchError) throw fetchError;
+            console.log(`Fetched content for deliverable ${deliverableId}`);
+            return fetchData ? fetchData.content : "No content found for this deliverable.";
+  
+          default:
+            return `Error: Unknown operation ${operation}`;
+        }
+      } catch (error) {
+        console.error("Error managing deliverable content:", error);
+        return `Error: Unable to manage deliverable content. ${error}`;
+      }
+    },
   }, 
   // {
   //   name: "add_column",
