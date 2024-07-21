@@ -10,7 +10,6 @@ import {
   addTask,
   moveTask,
   deleteTask,
-  updateTask,
   deleteColumn,
   updateColumn,
 } from "./actions";
@@ -244,9 +243,6 @@ export default function Kanban({ projectId }: KanbanProps) {
                 setTasks={setTasks}
                 addTask={(columnId) => addTask(columnId, user, setTasks)}
                 deleteTask={(taskId) => deleteTask(taskId, setTasks)}
-                updateTask={(taskId, title, description) =>
-                  updateTask(taskId, title, description, setTasks)
-                }
                 moveTask={(taskId, newColumnId) =>
                   moveTask(taskId, newColumnId, setTasks)
                 }

@@ -34,8 +34,6 @@ export async function addTask(columnId: string, user: any, setTasks: React.Dispa
       .select()
       .single();
 
-console.log(data)
-
     if (error) throw error;
 
     // Optimistically update the UI
@@ -60,31 +58,6 @@ export async function deleteTask(
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
   } catch (error) {
     console.error("Error deleting task:", error);
-  }
-}
-
-export async function updateTask(
-  taskId: string,
-  title: string,
-  description: string,
-  setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>
-) {
-  try {
-    const { error } = await supabase
-      .from("tasks")
-      .update({ title, description })
-      .eq("id", taskId);
-
-    if (error) throw error;
-
-    // Optimistically update the UI
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? { ...task, title, description } : task
-      )
-    );
-  } catch (error) {
-    console.error("Error updating task:", error);
   }
 }
 

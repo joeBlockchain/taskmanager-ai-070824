@@ -61,11 +61,10 @@ const supabase = createClient();
 
 interface TaskEditProps {
   task: TaskType;
-  onUpdate: (updatedTask: TaskType) => void;
   setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>;
 }
 
-export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
+export default function TaskEdit({ task, setTasks }: TaskEditProps) {
   console.log("task", task);
   const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -128,7 +127,7 @@ export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
         ...task,
         title,
         description,
-        due_date: dueDate ? dueDate.toISOString() : "",
+        due_date: dueDate ? dueDate.toISOString() : null,
         priority,
         updated_at: new Date().toISOString(),
       };
@@ -140,7 +139,6 @@ export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
 
       if (error) throw error;
 
-      onUpdate(updatedTask);
       setIsOpen(false);
     } catch (error) {
       console.error("Error updating task:", error);
@@ -184,13 +182,6 @@ export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
     if (result && result.newDeliverable) {
       setNewDeliverable(null);
       setDeliverables((prev) => [...prev, result.newDeliverable]);
-      // Update the task if it's the one we just added a deliverable to
-      if (result.updatedTask?.id === task.id) {
-        onUpdate({
-          ...task,
-          deliverables: [...(task.deliverables || []), result.newDeliverable],
-        });
-      }
     }
   };
 

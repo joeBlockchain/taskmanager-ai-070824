@@ -28,7 +28,6 @@ interface ColumnProps {
   setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>;
   addTask: (columnId: string) => void;
   deleteTask: (taskId: string) => void;
-  updateTask: (taskId: string, title: string, description: string) => void;
   moveTask: (taskId: string, newColumnId: string) => void;
   deleteColumn: (columnId: string) => void;
   updateColumn: (columnId: string, title: string, description: string) => void;
@@ -41,7 +40,6 @@ export default function Column({
   setTasks,
   addTask,
   deleteTask,
-  updateTask,
   moveTask,
   deleteColumn,
   updateColumn,
@@ -145,7 +143,6 @@ export default function Column({
                 task={task}
                 setTasks={setTasks}
                 deleteTask={deleteTask}
-                updateTask={updateTask}
                 moveTask={moveTask}
                 columns={columns}
               />
