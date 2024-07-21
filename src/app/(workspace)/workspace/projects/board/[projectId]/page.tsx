@@ -66,7 +66,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const tasks = tasksArray.flat();
 
   return (
-    <div className="mx-auto">
+    <div className="">
       <KanbanWrapper
         projectId={params.projectId}
         initialColumns={columns as ColumnType[]}

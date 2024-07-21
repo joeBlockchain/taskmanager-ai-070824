@@ -21,6 +21,7 @@ import {
 import { KanbanContext } from "@/components/kanban/kanban-wrapper";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface KanbanProps {
   projectId: string;
@@ -245,6 +246,20 @@ export default function Kanban({ projectId }: KanbanProps) {
     });
   }
 
+  // Helper function to group columns into pairs
+  const groupColumnPairs = (columns: ColumnType[]) => {
+    return columns.reduce((result, column, index) => {
+      if (index % 2 === 0) {
+        result.push([column]);
+      } else {
+        result[result.length - 1].push(column);
+      }
+      return result;
+    }, [] as ColumnType[][]);
+  };
+
+  const columnPairs = groupColumnPairs(columns);
+
   return (
     <div>
       <div className="flex flex-row items-center justify-between my-4">
@@ -264,38 +279,41 @@ export default function Kanban({ projectId }: KanbanProps) {
       {isLoading ? (
         <p>Loading...</p>
       ) : (
-        <div className="">
-          <div className="flex flex-row gap-4">
+        <div className="w-full">
+          <Tabs defaultValue={columns[0]?.id} className="w-full">
+            <TabsList className="w-full justify-between">
+              {columns.map((column) => (
+                <TabsTrigger
+                  key={column.id}
+                  value={column.id}
+                  className="w-full"
+                >
+                  {column.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
             {columns.map((column) => (
-              <Column
-                key={column.id}
-                column={column}
-                columns={columns}
-                tasks={tasks}
-                setTasks={setTasks}
-                addTask={(columnId) => addTask(columnId, user, setTasks)}
-                deleteTask={(taskId) => deleteTask(taskId, setTasks)}
-                moveTask={(taskId, newColumnId) =>
-                  moveTask(taskId, newColumnId, setTasks)
-                }
-                deleteColumn={(columnId) =>
-                  deleteColumn(columnId, setColumns, setTasks)
-                }
-                updateColumn={(columnId, title, description) =>
-                  updateColumn(columnId, title, description, setColumns)
-                }
-              />
+              <TabsContent key={column.id} value={column.id}>
+                <Column
+                  column={column}
+                  columns={columns}
+                  tasks={tasks}
+                  setTasks={setTasks}
+                  addTask={(columnId) => addTask(columnId, user, setTasks)}
+                  deleteTask={(taskId) => deleteTask(taskId, setTasks)}
+                  moveTask={(taskId, newColumnId) =>
+                    moveTask(taskId, newColumnId, setTasks)
+                  }
+                  deleteColumn={(columnId) =>
+                    deleteColumn(columnId, setColumns, setTasks)
+                  }
+                  updateColumn={(columnId, title, description) =>
+                    updateColumn(columnId, title, description, setColumns)
+                  }
+                />
+              </TabsContent>
             ))}
-            {/* <div className="items-center h-fit">
-              <Button
-                variant="outline"
-                onClick={() => addColumn(user, "New Column")}
-                className="text-muted-foreground w-[22rem]"
-              >
-                Add Column
-              </Button>
-            </div> */}
-          </div>
+          </Tabs>
         </div>
       )}
     </div>
