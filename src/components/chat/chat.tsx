@@ -103,7 +103,7 @@ export default function Chat({ projectId }: ChatProps) {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [toolCallInProgress, setToolCallInProgress] = useState(false);
 
-  const { columns, tasks } = useContext(KanbanContext);
+  const { columns, tasks, deliverables } = useContext(KanbanContext);
 
   useEffect(() => {
     scrollToBottom();
@@ -146,13 +146,26 @@ export default function Chat({ projectId }: ChatProps) {
     setMessages(updatedMessages);
     setInputMessage("");
 
+    // Transform the flat lists into a nested structure
+    const nestedData = columns.map((column) => ({
+      ...column,
+      tasks: tasks
+        .filter((task) => task.column_id === column.id)
+        .map((task) => ({
+          ...task,
+          deliverables: deliverables.filter(
+            (deliverable) => deliverable.task_id === task.id
+          ),
+        })),
+    }));
+
     const formData = new FormData();
     formData.append("messages", JSON.stringify(updatedMessages));
     formData.append("projectId", projectId);
-    formData.append("columns", JSON.stringify(columns));
-    formData.append("tasks", JSON.stringify(tasks));
+    formData.append("nestedData", JSON.stringify(nestedData));
     attachedFiles.forEach((file) => formData.append("files", file));
 
+    console.log("nestedData", nestedData);
     try {
       const res = await fetch("/api/anthropic", {
         method: "POST",

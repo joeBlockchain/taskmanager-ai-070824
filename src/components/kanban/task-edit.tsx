@@ -271,7 +271,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
       </AlertDialogTrigger>
       <AlertDialogContent className="max-w-3xl max-h-[90vh]">
         <AlertDialogHeader>
-          <AlertDialogTitle>Edit Task {task.id}</AlertDialogTitle>
+          <AlertDialogTitle>Edit Task</AlertDialogTitle>
           <ScrollArea className="h-[70vh]">
             <AlertDialogDescription>
               <div className="space-y-4">

@@ -3,7 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { useState, useEffect, useContext } from "react";
-import { Column as ColumnType, Task as TaskType, Project } from "./types";
+import {
+  Column as ColumnType,
+  Task as TaskType,
+  Project,
+  Deliverable as DeliverableType,
+} from "./types";
 import Column from "./column";
 import {
   addColumn,
@@ -23,7 +28,14 @@ interface KanbanProps {
 
 export default function Kanban({ projectId }: KanbanProps) {
   const supabase = createClient();
-  const { columns, tasks, setColumns, setTasks } = useContext(KanbanContext);
+  const {
+    columns,
+    tasks,
+    setColumns,
+    setTasks,
+    deliverables,
+    setDeliverables,
+  } = useContext(KanbanContext);
   const [project, setProject] = useState<Project | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +50,9 @@ export default function Kanban({ projectId }: KanbanProps) {
         setIsLoading(false);
       });
     fetchProject();
+    fetchColumns();
+    fetchTasks();
+    fetchDeliverables();
 
     const subscription = supabase
       .channel("schema-db-changes")
@@ -127,6 +142,17 @@ export default function Kanban({ projectId }: KanbanProps) {
       setTasks(data);
     } catch (error) {
       console.error("Error fetching tasks:", error);
+    }
+  }
+
+  async function fetchDeliverables() {
+    try {
+      const { data, error } = await supabase.from("deliverables").select("*");
+      console.log("deliverables", data);
+      if (error) throw error;
+      setDeliverables(data);
+    } catch (error) {
+      console.error("Error fetching deliverables:", error);
     }
   }
 

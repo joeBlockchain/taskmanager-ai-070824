@@ -9,36 +9,57 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { MessageSquare } from "lucide-react";
-import { Column as ColumnType, Task as TaskType } from "./types";
+import {
+  Column as ColumnType,
+  Task as TaskType,
+  Deliverable as DeliverableType,
+} from "./types";
 
 interface KanbanWrapperProps {
   projectId: string;
   initialColumns: ColumnType[];
   initialTasks: TaskType[];
+  initialDeliverables: DeliverableType[];
 }
 
 export const KanbanContext = createContext<{
   columns: ColumnType[];
   tasks: TaskType[];
+  deliverables: DeliverableType[];
   setColumns: React.Dispatch<React.SetStateAction<ColumnType[]>>;
   setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>;
+  setDeliverables: React.Dispatch<React.SetStateAction<DeliverableType[]>>;
 }>({
   columns: [],
   tasks: [],
+  deliverables: [],
   setColumns: () => {},
   setTasks: () => {},
+  setDeliverables: () => {},
 });
 
 export default function KanbanWrapper({
   projectId,
   initialColumns,
   initialTasks,
+  initialDeliverables,
 }: KanbanWrapperProps) {
   const [columns, setColumns] = useState<ColumnType[]>(initialColumns);
   const [tasks, setTasks] = useState<TaskType[]>(initialTasks);
+  const [deliverables, setDeliverables] =
+    useState<DeliverableType[]>(initialDeliverables);
 
   return (
-    <KanbanContext.Provider value={{ columns, tasks, setColumns, setTasks }}>
+    <KanbanContext.Provider
+      value={{
+        columns,
+        tasks,
+        deliverables,
+        setColumns,
+        setTasks,
+        setDeliverables,
+      }}
+    >
       <Kanban projectId={projectId} />
       <Popover>
         <PopoverTrigger className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-lg border-border border flex items-center justify-center">

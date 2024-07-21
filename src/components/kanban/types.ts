@@ -1,3 +1,28 @@
+export interface KanbanWrapperProps {
+  projectId: string;
+  initialColumns: Column[];
+  initialTasks: Task[];
+  initialDeliverables: Deliverable[];
+}
+
+  export interface Project {
+    id: string;
+    user_id: string;
+    name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  }
+
+  export interface Column {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+  }
+
 export interface Task {
     id: string;
     user_id: string;
@@ -10,24 +35,6 @@ export interface Task {
     updated_at: string;
     deliverables?: Deliverable[]; 
 }
-  
-  export interface Column {
-    id: string;
-    user_id: string;
-    title: string;
-    description: string;
-    created_at: string;
-    updated_at: string;
-  }
-
-  export interface Project {
-    id: string;
-    user_id: string;
-    name: string;
-    description: string;
-    created_at: string;
-    updated_at: string;
-  }
 
   export interface Deliverable {
     id: string;

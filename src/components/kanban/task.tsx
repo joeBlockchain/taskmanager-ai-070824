@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -78,6 +79,7 @@ export default function Task({
       </div>
       <CardHeader className="px-6 py-2 m-0">
         <CardTitle className="text-lg">{task.title}</CardTitle>
+        <CardDescription>{task.id}</CardDescription>
       </CardHeader>
       <Separator />
       <CardContent className="px-6 py-2 m-0 text-muted-foreground space-y-3">
