@@ -37,6 +37,7 @@ import TaskEdit from "./task-edit";
 
 interface TaskProps {
   task: TaskType;
+  setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>;
   deleteTask: (taskId: string) => void;
   updateTask: (taskId: string, title: string, description: string) => void;
   moveTask: (taskId: string, newColumnId: string) => void;
@@ -45,6 +46,7 @@ interface TaskProps {
 
 export default function Task({
   task,
+  setTasks,
   deleteTask,
   updateTask,
   moveTask,
@@ -70,7 +72,17 @@ export default function Task({
       </Button>
       <div className="absolute hidden group-hover:flex  w-[1.5rem] -right-[.5rem] top-[.5rem] ">
         <div className="flex flex-col space-y-1">
-          <TaskEdit task={task} onUpdate={handleUpdate} />
+          <TaskEdit
+            task={task}
+            onUpdate={(updatedTask) =>
+              updateTask(
+                updatedTask.id,
+                updatedTask.title,
+                updatedTask.description
+              )
+            }
+            setTasks={setTasks}
+          />
           <Button
             variant="outline"
             className="w-[2rem] h-[2rem] p-0 m-0"

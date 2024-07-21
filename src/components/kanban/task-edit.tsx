@@ -21,7 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Task, Deliverable } from "@/components/kanban/types";
+import {
+  Task as TaskType,
+  Deliverable,
+  DeliverableContent,
+} from "@/components/kanban/types";
 import {
   PencilLine,
   Calendar as CalendarIcon,
@@ -30,6 +34,7 @@ import {
   X,
   Trash,
   Pencil,
+  Paperclip,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -55,11 +60,13 @@ import { addDeliverable } from "@/components/kanban/actions";
 const supabase = createClient();
 
 interface TaskEditProps {
-  task: Task;
-  onUpdate: (updatedTask: Task) => void;
+  task: TaskType;
+  onUpdate: (updatedTask: TaskType) => void;
+  setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>;
 }
 
-export default function TaskEdit({ task, onUpdate }: TaskEditProps) {
+export default function TaskEdit({ task, onUpdate, setTasks }: TaskEditProps) {
+  console.log("task", task);
   const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(task.title);
@@ -74,6 +81,13 @@ export default function TaskEdit({ task, onUpdate }: TaskEditProps) {
   const [editingDeliverable, setEditingDeliverable] = useState<string | null>(
     null
   );
+
+  const [deliverableContent, setDeliverableContent] = useState<
+    Record<string, DeliverableContent | null>
+  >({});
+  const [deliverableContentError, setDeliverableContentError] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     fetchDeliverables();
@@ -191,20 +205,31 @@ export default function TaskEdit({ task, onUpdate }: TaskEditProps) {
   };
 
   const handleSaveDeliverable = async () => {
-    if (!newDeliverable || !newDeliverable.title) return;
+    console.log("taskid", task.id);
+    console.log("newDeliverable", newDeliverable);
 
-    const savedDeliverable = await addDeliverable(
+    if (!newDeliverable || !newDeliverable.title || !user) return;
+
+    const result = await addDeliverable(
       task.id,
       user.id,
-      newDeliverable.title || "Deliverable Title",
+      newDeliverable.title,
       newDeliverable.status || "Not Started",
-      newDeliverable.description || "Deliverable Description",
-      newDeliverable.due_date || new Date().toISOString()
+      setTasks,
+      newDeliverable.description,
+      newDeliverable.due_date
     );
 
-    if (savedDeliverable) {
-      setDeliverables([...deliverables, savedDeliverable]);
+    if (result && result.newDeliverable) {
       setNewDeliverable(null);
+      setDeliverables((prev) => [...prev, result.newDeliverable]);
+      // Update the task if it's the one we just added a deliverable to
+      if (result.updatedTaskId === task.id) {
+        onUpdate({
+          ...task,
+          deliverables: [...(task.deliverables || []), result.newDeliverable],
+        });
+      }
     }
   };
 
@@ -225,9 +250,6 @@ export default function TaskEdit({ task, onUpdate }: TaskEditProps) {
 
       if (error) throw error;
 
-      setDeliverables((prevDeliverables) =>
-        prevDeliverables.map((d) => (d.id === deliverable.id ? deliverable : d))
-      );
       setEditingDeliverable(null);
     } catch (error) {
       console.error("Error updating deliverable:", error);
@@ -257,6 +279,33 @@ export default function TaskEdit({ task, onUpdate }: TaskEditProps) {
     }
   };
 
+  const fetchDeliverableContent = async (deliverableId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("deliverable_content")
+        .select("*")
+        .eq("deliverable_id", deliverableId)
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          // No content found
+          setDeliverableContent((prev) => ({ ...prev, [deliverableId]: null }));
+        } else {
+          throw error;
+        }
+      } else {
+        setDeliverableContent((prev) => ({ ...prev, [deliverableId]: data }));
+      }
+    } catch (error) {
+      console.error("Error fetching deliverable content:", error);
+      setDeliverableContentError((prev) => ({
+        ...prev,
+        [deliverableId]: true,
+      }));
+    }
+  };
+
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
@@ -266,7 +315,7 @@ export default function TaskEdit({ task, onUpdate }: TaskEditProps) {
       </AlertDialogTrigger>
       <AlertDialogContent className="max-w-3xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Edit Task</AlertDialogTitle>
+          <AlertDialogTitle>Edit Task {task.id}</AlertDialogTitle>
           <AlertDialogDescription>
             <div className="space-y-4">
               <div className="grid items-center gap-1.5">
@@ -511,6 +560,50 @@ export default function TaskEdit({ task, onUpdate }: TaskEditProps) {
                                   >
                                     <Trash className="h-4 w-4" />
                                   </Button>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          fetchDeliverableContent(
+                                            deliverable.id
+                                          )
+                                        }
+                                      >
+                                        <Paperclip className="h-4 w-4" />
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80">
+                                      <div className="space-y-2">
+                                        <h4 className="font-medium">
+                                          Deliverable Content
+                                        </h4>
+                                        {deliverableContentError[
+                                          deliverable.id
+                                        ] ? (
+                                          <p className="text-sm text-red-500">
+                                            Error loading content. Please try
+                                            again.
+                                          </p>
+                                        ) : deliverableContent[
+                                            deliverable.id
+                                          ] === null ? (
+                                          <p className="text-sm">
+                                            No content available for this
+                                            deliverable.
+                                          </p>
+                                        ) : (
+                                          <p className="text-sm">
+                                            {
+                                              deliverableContent[deliverable.id]
+                                                ?.content
+                                            }
+                                          </p>
+                                        )}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
                                 </div>
                               </TableCell>
                             </>

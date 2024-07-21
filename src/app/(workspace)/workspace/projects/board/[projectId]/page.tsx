@@ -67,9 +67,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const tasksArray = await Promise.all(tasksPromises);
   const tasks = tasksArray.flat();
 
-  console.log("columns", columns);
-  console.log("tasks", tasks);
-
   return (
     <div className="mx-auto">
       <KanbanWrapper

@@ -162,7 +162,7 @@ export default function Kanban({ projectId }: KanbanProps) {
           return [...currentTasks, newTask];
         case "UPDATE":
           return currentTasks.map((task) =>
-            task.id === newTask.id ? newTask : task
+            task.id === newTask.id ? { ...task, ...newTask } : task
           );
         case "DELETE":
           return currentTasks.filter((task) => task.id !== oldTask.id);
@@ -171,6 +171,7 @@ export default function Kanban({ projectId }: KanbanProps) {
       }
     });
   }
+
   return (
     <div>
       <div className="flex flex-row items-center justify-between my-4">
@@ -201,7 +202,8 @@ export default function Kanban({ projectId }: KanbanProps) {
                 column={column}
                 columns={columns}
                 tasks={tasks}
-                addTask={(columnId) => addTask(columnId, user)}
+                setTasks={setTasks}
+                addTask={(columnId) => addTask(columnId, user, setTasks)}
                 deleteTask={(taskId) => deleteTask(taskId, setTasks)}
                 updateTask={(taskId, title, description) =>
                   updateTask(taskId, title, description, setTasks)

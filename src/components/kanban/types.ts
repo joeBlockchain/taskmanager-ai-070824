@@ -37,8 +37,23 @@ export interface Task {
     description?: string;
     status: 'Not Started' | 'In Progress' | 'Completed' | 'Approved' | 'Rejected';
     due_date?: string;
-    file_url?: string;
     created_at: string;
     updated_at: string;
     is_archived: boolean;
+  }
+
+  export interface DeliverableContent {
+    id: string;
+    deliverable_id: string;
+    content: string;
+    created_at: string;
+    updated_at: string;
+  }
+
+  export interface DeliverableContentVersion {
+    id: string;
+    deliverable_content_id: string;
+    content: string;
+    created_at: string;
+    created_by: string | null;
   }
