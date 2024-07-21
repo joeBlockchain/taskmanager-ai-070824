@@ -63,12 +63,27 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "summarize_url",
-    description: "Summarizes the content of a given URL using Jina AI Reader.",
+    name: "get_current_datetime",
+    description: "Gets the current date and time.",
+    schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+    handler: async () => {
+      const now = new Date();
+      const currentDateTime = now.toISOString();
+      console.log("Current date and time:", currentDateTime);
+      return currentDateTime;
+    },
+  },
+  {
+    name: "get_website_content",
+    description: "Retrieves the content of a given URL using Jina AI Reader which will return the markdown content of the website.",
     schema: {
       type: "object",
       properties: {
-        url: { type: "string", description: "The URL to summarize." },
+        url: { type: "string", description: "The URL to retrieve the content from." },
       },
       required: ["url"],
     },
@@ -97,39 +112,42 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "add_column",
-    description: "Adds a new column for the user.",
+    name: "jina_search",
+    description: "Performs a web search using Jina AI Reader API and returns the top results.  When using the jina_search tool, please include the query in your response. Also include the URL of the search results.",
     schema: {
       type: "object",
       properties: {
-        title: {
-          type: "string",
-          description: "The title of the new column.",
-        },
+        query: { type: "string", description: "The search query to perform." },
       },
-      required: ["title"],
+      required: ["query"],
     },
-    handler: async ({ title }: { title: string }, userId: string) => {
-      console.log(`Adding column with title: ${title}`);
+    handler: async ({ query }: { query: string }) => {
+      console.log("Performing Jina search for:", query);
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("columns")
-          .insert({ title, user_id: userId })
-          .select();
-
-        if (error) throw error;
-        console.log("Column added successfully:", data);
-        return `Column "${title}" added successfully.`;
+        const response = await fetch(`https://s.jina.ai/${encodeURIComponent(query)}`, {
+          headers: {
+            "X-Return-Format": "text",
+            Authorization: `Bearer ${process.env.JINA_API_KEY}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const searchResults = await response.text();
+        console.log(
+          "Jina search results:",
+          searchResults.substring(0, 200) + "..."
+        );
+        return searchResults;
       } catch (error) {
-        console.error("Error adding column:", error);
-        return `Error: Unable to add column. ${error}`;
+        console.error("Error performing Jina search:", error);
+        return `Error: Unable to perform Jina search. ${error}`;
       }
     },
   },
   {
     name: "add_task",
-    description: "Adds a new task to a column.",
+    description: "Adds a new task to a column, optionally with deliverables.",
     schema: {
       type: "object",
       properties: {
@@ -154,10 +172,37 @@ const tools: Tool[] = [
           description: "The priority of the new task.",
           enum: ["urgent", "high", "medium", "low"],
         },
+        deliverables: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "The title of the deliverable.",
+              },
+              description: {
+                type: "string",
+                description: "The description of the deliverable.",
+              },
+              due_date: {
+                type: "string",
+                description: "The due date of the deliverable in ISO 8601 format (YYYY-MM-DD).",
+              },
+              status: {
+                type: "string",
+                description: "The status of the deliverable.",
+                enum: ["Not Started", "In Progress", "Completed", "Approved", "Rejected"],
+              },
+            },
+            required: ["title", "status"],
+          },
+          description: "An array of deliverables to add with the task.",
+        },
       },
       required: ["columnId", "title", "description", "due_date", "priority"],
     },
-    handler: async ({ columnId, title, description, due_date, priority }: { columnId: string; title: string; description: string; due_date: string; priority: string }, userId: string) => {
+    handler: async ({ columnId, title, description, due_date, priority, deliverables }: { columnId: string; title: string; description: string; due_date: string; priority: string; deliverables?: { title: string; description: string; due_date: string; status: string }[] }, userId: string) => {
       console.log(`Adding task with title: ${title} to column: ${columnId}`);
       try {
         const supabase = createClient();
@@ -177,22 +222,36 @@ const tools: Tool[] = [
         }
 
         // Add the task
-        const { error } = await supabase
+        const { data: taskData, error: taskError } = await supabase
           .from("tasks")
-          .insert({ title, column_id: columnId, user_id: userId, description, due_date, priority });
+          .insert({ title, column_id: columnId, user_id: userId, description, due_date, priority })
+          .select();
 
-        if (error) throw error;
-        console.log("Task added successfully");
+        if (taskError) throw taskError;
+
+        const taskId = taskData[0].id;
+
+        // Add deliverables if provided
+        if (deliverables && deliverables.length > 0) {
+          const deliverableData = deliverables.map(deliverable => ({ ...deliverable, task_id: taskId, user_id: userId }));
+          const { error: deliverableError } = await supabase
+            .from("deliverables")
+            .insert(deliverableData);
+
+          if (deliverableError) throw deliverableError;
+        }
+
+        console.log("Task and deliverables added successfully");
         return `Task "${title}" added successfully to column "${columnId}". Available columns: ${JSON.stringify(columns)}`;
       } catch (error) {
-        console.error("Error adding task:", error);
-        return `Error: Unable to add task. ${error}`;
+        console.error("Error adding task and deliverables:", error);
+        return `Error: Unable to add task and deliverables. ${error}`;
       }
     },
   },
   {
     name: "add_multiple_tasks",
-    description: "Adds multiple tasks to a column.",
+    description: "Adds multiple tasks to a column, optionally with deliverables.",
     schema: {
       type: "object",
       properties: {
@@ -222,6 +281,33 @@ const tools: Tool[] = [
                 description: "The priority of the task.",
                 enum: ["urgent", "high", "medium", "low"],
               },
+              deliverables: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: {
+                      type: "string",
+                      description: "The title of the deliverable.",
+                    },
+                    description: {
+                      type: "string",
+                      description: "The description of the deliverable.",
+                    },
+                    due_date: {
+                      type: "string",
+                      description: "The due date of the deliverable in ISO 8601 format (YYYY-MM-DD).",
+                    },
+                    status: {
+                      type: "string",
+                      description: "The status of the deliverable.",
+                      enum: ["Not Started", "In Progress", "Completed", "Approved", "Rejected"],
+                    },
+                  },
+                  required: ["title", "status"],
+                },
+                description: "An array of deliverables to add with the task.",
+              },
             },
             required: ["title", "description", "due_date", "priority"],
           },
@@ -230,7 +316,7 @@ const tools: Tool[] = [
       },
       required: ["columnId", "tasks"],
     },
-    handler: async ({ columnId, tasks }: { columnId: string; tasks: { title: string; description: string; due_date: string; priority: string }[] }, userId: string) => {
+    handler: async ({ columnId, tasks }: { columnId: string; tasks: { title: string; description: string; due_date: string; priority: string; deliverables?: { title: string; description: string; due_date: string; status: string }[] }[] }, userId: string) => {
       console.log(`Adding multiple tasks to column: ${columnId}`);
       try {
         const supabase = createClient();
@@ -249,17 +335,35 @@ const tools: Tool[] = [
           return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
         }
 
-        const taskData = tasks.map(task => ({ ...task, column_id: columnId, user_id: userId }));
-        const { error } = await supabase
-          .from("tasks")
-          .insert(taskData);
-  
-        if (error) throw error;
-        console.log("Tasks added successfully");
+        for (const task of tasks) {
+          const { title, description, due_date, priority, deliverables } = task;
+
+          // Add the task
+          const { data: taskData, error: taskError } = await supabase
+            .from("tasks")
+            .insert({ title, column_id: columnId, user_id: userId, description, due_date, priority })
+            .select();
+
+          if (taskError) throw taskError;
+
+          const taskId = taskData[0].id;
+
+          // Add deliverables if provided
+          if (deliverables && deliverables.length > 0) {
+            const deliverableData = deliverables.map(deliverable => ({ ...deliverable, task_id: taskId, user_id: userId }));
+            const { error: deliverableError } = await supabase
+              .from("deliverables")
+              .insert(deliverableData);
+
+            if (deliverableError) throw deliverableError;
+          }
+        }
+
+        console.log("Tasks and deliverables added successfully");
         return `Tasks added successfully to column "${columnId}". Available columns: ${JSON.stringify(columns)}`;
       } catch (error) {
-        console.error("Error adding tasks:", error);
-        return `Error: Unable to add tasks. ${error}`;
+        console.error("Error adding tasks and deliverables:", error);
+        return `Error: Unable to add tasks and deliverables. ${error}`;
       }
     },
   },
@@ -390,86 +494,117 @@ const tools: Tool[] = [
       }
     },
   },
-  {
-    name: "delete_column",
-    description: "Deletes a column and its associated tasks.",
-    schema: {
-      type: "object",
-      properties: {
-        columnId: {
-          type: "string",
-          description: "The ID of the column to delete.",
-        },
-      },
-      required: ["columnId"],
-    },
-    handler: async ({ columnId }: { columnId: string }, userId: string) => {
-      console.log(`Deleting column with ID: ${columnId}`);
-      try {
-        const supabase = createClient();
-        // First, delete all tasks associated with this column
-        const { error: tasksError } = await supabase
-          .from("tasks")
-          .delete()
-          .eq("column_id", columnId);
+  // {
+  //   name: "add_column",
+  //   description: "Adds a new column for the user.",
+  //   schema: {
+  //     type: "object",
+  //     properties: {
+  //       title: {
+  //         type: "string",
+  //         description: "The title of the new column.",
+  //       },
+  //     },
+  //     required: ["title"],
+  //   },
+  //   handler: async ({ title }: { title: string }, userId: string) => {
+  //     console.log(`Adding column with title: ${title}`);
+  //     try {
+  //       const supabase = createClient();
+  //       const { data, error } = await supabase
+  //         .from("columns")
+  //         .insert({ title, user_id: userId })
+  //         .select();
 
-        if (tasksError) throw tasksError;
+  //       if (error) throw error;
+  //       console.log("Column added successfully:", data);
+  //       return `Column "${title}" added successfully.`;
+  //     } catch (error) {
+  //       console.error("Error adding column:", error);
+  //       return `Error: Unable to add column. ${error}`;
+  //     }
+  //   },
+  // },
+  // {
+  //   name: "delete_column",
+  //   description: "Deletes a column and its associated tasks.",
+  //   schema: {
+  //     type: "object",
+  //     properties: {
+  //       columnId: {
+  //         type: "string",
+  //         description: "The ID of the column to delete.",
+  //       },
+  //     },
+  //     required: ["columnId"],
+  //   },
+  //   handler: async ({ columnId }: { columnId: string }, userId: string) => {
+  //     console.log(`Deleting column with ID: ${columnId}`);
+  //     try {
+  //       const supabase = createClient();
+  //       // First, delete all tasks associated with this column
+  //       const { error: tasksError } = await supabase
+  //         .from("tasks")
+  //         .delete()
+  //         .eq("column_id", columnId);
 
-        // Then, delete the column itself
-        const { error: columnError } = await supabase
-          .from("columns")
-          .delete()
-          .eq("id", columnId);
+  //       if (tasksError) throw tasksError;
 
-        if (columnError) throw columnError;
+  //       // Then, delete the column itself
+  //       const { error: columnError } = await supabase
+  //         .from("columns")
+  //         .delete()
+  //         .eq("id", columnId);
 
-        console.log("Column and associated tasks deleted successfully");
-        return `Column with ID "${columnId}" and its associated tasks deleted successfully.`;
-      } catch (error) {
-        console.error("Error deleting column:", error);
-        return `Error: Unable to delete column. ${error}`;
-      }
-    },
-  },
-  {
-    name: "update_column",
-    description: "Updates a column.",
-    schema: {
-      type: "object",
-      properties: {
-        columnId: {
-          type: "string",
-          description: "The ID of the column to update.",
-        },
-        title: {
-          type: "string",
-          description: "The new title of the column.",
-        },
-        description: {
-          type: "string",
-          description: "The new description of the column.",
-        },
-      },
-      required: ["columnId", "title", "description"],
-    },
-    handler: async ({ columnId, title, description }: { columnId: string; title: string; description: string }, userId: string) => {
-      console.log(`Updating column with ID: ${columnId}`);
-      try {
-        const supabase = createClient();
-        const { error } = await supabase
-          .from("columns")
-          .update({ title, description })
-          .eq("id", columnId);
+  //       if (columnError) throw columnError;
 
-        if (error) throw error;
-        console.log("Column updated successfully");
-        return `Column with ID "${columnId}" updated successfully.`;
-      } catch (error) {
-        console.error("Error updating column:", error);
-        return `Error: Unable to update column. ${error}`;
-      }
-    },
-  },
+  //       console.log("Column and associated tasks deleted successfully");
+  //       return `Column with ID "${columnId}" and its associated tasks deleted successfully.`;
+  //     } catch (error) {
+  //       console.error("Error deleting column:", error);
+  //       return `Error: Unable to delete column. ${error}`;
+  //     }
+  //   },
+  // },
+  // {
+  //   name: "update_column",
+  //   description: "Updates a column.",
+  //   schema: {
+  //     type: "object",
+  //     properties: {
+  //       columnId: {
+  //         type: "string",
+  //         description: "The ID of the column to update.",
+  //       },
+  //       title: {
+  //         type: "string",
+  //         description: "The new title of the column.",
+  //       },
+  //       description: {
+  //         type: "string",
+  //         description: "The new description of the column.",
+  //       },
+  //     },
+  //     required: ["columnId", "title", "description"],
+  //   },
+  //   handler: async ({ columnId, title, description }: { columnId: string; title: string; description: string }, userId: string) => {
+  //     console.log(`Updating column with ID: ${columnId}`);
+  //     try {
+  //       const supabase = createClient();
+  //       const { error } = await supabase
+  //         .from("columns")
+  //         .update({ title, description })
+  //         .eq("id", columnId);
+
+  //       if (error) throw error;
+  //       console.log("Column updated successfully");
+  //       return `Column with ID "${columnId}" updated successfully.`;
+  //     } catch (error) {
+  //       console.error("Error updating column:", error);
+  //       return `Error: Unable to update column. ${error}`;
+  //     }
+  //   },
+  // },
   // {
   //   name: "fetch_columns",
   //   description: "Fetches all columns for the user.",
