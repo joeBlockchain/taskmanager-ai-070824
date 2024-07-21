@@ -280,20 +280,116 @@ export default function Kanban({ projectId }: KanbanProps) {
         <p>Loading...</p>
       ) : (
         <div className="w-full">
-          <Tabs defaultValue={columns[0]?.id} className="w-full">
-            <TabsList className="w-full justify-between">
+          {/* Tabs for small screens */}
+          <div className="md:hidden">
+            <Tabs defaultValue={columns[0]?.id} className="w-full">
+              <TabsList className="w-full justify-between">
+                {columns.map((column) => (
+                  <TabsTrigger
+                    key={column.id}
+                    value={column.id}
+                    className="w-full"
+                  >
+                    {column.title}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
               {columns.map((column) => (
-                <TabsTrigger
-                  key={column.id}
-                  value={column.id}
-                  className="w-full"
-                >
-                  {column.title}
-                </TabsTrigger>
+                <TabsContent key={column.id} value={column.id}>
+                  <Column
+                    column={column}
+                    columns={columns}
+                    tasks={tasks}
+                    setTasks={setTasks}
+                    addTask={(columnId) => addTask(columnId, user, setTasks)}
+                    deleteTask={(taskId) => deleteTask(taskId, setTasks)}
+                    moveTask={(taskId, newColumnId) =>
+                      moveTask(taskId, newColumnId, setTasks)
+                    }
+                    deleteColumn={(columnId) =>
+                      deleteColumn(columnId, setColumns, setTasks)
+                    }
+                    updateColumn={(columnId, title, description) =>
+                      updateColumn(columnId, title, description, setColumns)
+                    }
+                  />
+                </TabsContent>
               ))}
-            </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Side-by-side 2 columns for md screens */}
+          <div className="hidden md:block lg:hidden">
+            <Tabs defaultValue="first-2" className="w-full">
+              <TabsList className="w-full justify-between">
+                <TabsTrigger className="w-full" value="first-2">
+                  Todo & In Progress
+                </TabsTrigger>
+                <TabsTrigger className="w-full" value="last-2">
+                  Review & Done
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="first-2">
+                <div className="flex space-x-4">
+                  {columns.slice(0, 2).map((column) => (
+                    <div key={column.id} className="flex-1 min-w-[300px]">
+                      <Column
+                        column={column}
+                        columns={columns}
+                        tasks={tasks}
+                        setTasks={setTasks}
+                        addTask={(columnId) =>
+                          addTask(columnId, user, setTasks)
+                        }
+                        deleteTask={(taskId) => deleteTask(taskId, setTasks)}
+                        moveTask={(taskId, newColumnId) =>
+                          moveTask(taskId, newColumnId, setTasks)
+                        }
+                        deleteColumn={(columnId) =>
+                          deleteColumn(columnId, setColumns, setTasks)
+                        }
+                        updateColumn={(columnId, title, description) =>
+                          updateColumn(columnId, title, description, setColumns)
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="last-2">
+                <div className="flex space-x-4">
+                  {columns.slice(2, 4).map((column) => (
+                    <div key={column.id} className="flex-1 min-w-[300px]">
+                      <Column
+                        column={column}
+                        columns={columns}
+                        tasks={tasks}
+                        setTasks={setTasks}
+                        addTask={(columnId) =>
+                          addTask(columnId, user, setTasks)
+                        }
+                        deleteTask={(taskId) => deleteTask(taskId, setTasks)}
+                        moveTask={(taskId, newColumnId) =>
+                          moveTask(taskId, newColumnId, setTasks)
+                        }
+                        deleteColumn={(columnId) =>
+                          deleteColumn(columnId, setColumns, setTasks)
+                        }
+                        updateColumn={(columnId, title, description) =>
+                          updateColumn(columnId, title, description, setColumns)
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Side-by-side columns for large screens */}
+          <div className="hidden lg:flex lg:space-x-4 lg:overflow-x-auto">
             {columns.map((column) => (
-              <TabsContent key={column.id} value={column.id}>
+              <div key={column.id} className="lg:flex-1 lg:min-w-[300px]">
                 <Column
                   column={column}
                   columns={columns}
@@ -311,9 +407,9 @@ export default function Kanban({ projectId }: KanbanProps) {
                     updateColumn(columnId, title, description, setColumns)
                   }
                 />
-              </TabsContent>
+              </div>
             ))}
-          </Tabs>
+          </div>
         </div>
       )}
     </div>
