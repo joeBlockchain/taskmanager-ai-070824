@@ -16,6 +16,7 @@ import Task from "./task";
 import {
   Column as ColumnType,
   Task as TaskType,
+  Deliverable as DeliverableType,
 } from "@/components/kanban/types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +27,8 @@ interface ColumnProps {
   columns: ColumnType[];
   tasks: TaskType[];
   setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>;
+  deliverables: DeliverableType[];
+  setDeliverables: React.Dispatch<React.SetStateAction<DeliverableType[]>>;
   addTask: (columnId: string) => void;
   deleteTask: (taskId: string) => void;
   moveTask: (taskId: string, newColumnId: string) => void;
@@ -38,6 +41,8 @@ export default function Column({
   columns,
   tasks,
   setTasks,
+  deliverables,
+  setDeliverables,
   addTask,
   deleteTask,
   moveTask,
@@ -145,6 +150,8 @@ export default function Column({
                 deleteTask={deleteTask}
                 moveTask={moveTask}
                 columns={columns}
+                deliverables={deliverables}
+                setDeliverables={setDeliverables}
               />
             ))}
         </div>

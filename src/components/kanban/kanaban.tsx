@@ -218,31 +218,27 @@ export default function Kanban({ projectId }: KanbanProps) {
   function handleDeliverableChange(payload: any) {
     const { eventType, new: newDeliverable, old: oldDeliverable } = payload;
     console.log("Deliverable change received", payload);
-    setTasks((prevTasks) => {
-      return prevTasks.map((task) => {
-        if (task.id === newDeliverable.task_id) {
-          let updatedDeliverables = task.deliverables || [];
-          switch (eventType) {
-            case "INSERT":
-              updatedDeliverables = [...updatedDeliverables, newDeliverable];
-              break;
-            case "UPDATE":
-              updatedDeliverables = updatedDeliverables.map((deliverable) =>
-                deliverable.id === newDeliverable.id
-                  ? newDeliverable
-                  : deliverable
-              );
-              break;
-            case "DELETE":
-              updatedDeliverables = updatedDeliverables.filter(
-                (deliverable) => deliverable.id !== oldDeliverable.id
-              );
-              break;
-          }
-          return { ...task, deliverables: updatedDeliverables };
-        }
-        return task;
-      });
+    setDeliverables((prevDeliverables) => {
+      // Ensure prevTasks is an array
+      const currentDeliverables = Array.isArray(prevDeliverables)
+        ? prevDeliverables
+        : [];
+      switch (eventType) {
+        case "INSERT":
+          return [...currentDeliverables, newDeliverable];
+        case "UPDATE":
+          return currentDeliverables.map((deliverable) =>
+            deliverable.id === newDeliverable.id
+              ? { ...deliverable, ...newDeliverable }
+              : deliverable
+          );
+        case "DELETE":
+          return currentDeliverables.filter(
+            (deliverable) => deliverable.id !== oldDeliverable.id
+          );
+        default:
+          return currentDeliverables;
+      }
     });
   }
 
@@ -301,6 +297,8 @@ export default function Kanban({ projectId }: KanbanProps) {
                     columns={columns}
                     tasks={tasks}
                     setTasks={setTasks}
+                    deliverables={deliverables}
+                    setDeliverables={setDeliverables}
                     addTask={(columnId) => addTask(columnId, user, setTasks)}
                     deleteTask={(taskId) => deleteTask(taskId, setTasks)}
                     moveTask={(taskId, newColumnId) =>
@@ -338,6 +336,8 @@ export default function Kanban({ projectId }: KanbanProps) {
                         columns={columns}
                         tasks={tasks}
                         setTasks={setTasks}
+                        deliverables={deliverables}
+                        setDeliverables={setDeliverables}
                         addTask={(columnId) =>
                           addTask(columnId, user, setTasks)
                         }
@@ -365,6 +365,8 @@ export default function Kanban({ projectId }: KanbanProps) {
                         columns={columns}
                         tasks={tasks}
                         setTasks={setTasks}
+                        deliverables={deliverables}
+                        setDeliverables={setDeliverables}
                         addTask={(columnId) =>
                           addTask(columnId, user, setTasks)
                         }
@@ -395,6 +397,8 @@ export default function Kanban({ projectId }: KanbanProps) {
                   columns={columns}
                   tasks={tasks}
                   setTasks={setTasks}
+                  deliverables={deliverables}
+                  setDeliverables={setDeliverables}
                   addTask={(columnId) => addTask(columnId, user, setTasks)}
                   deleteTask={(taskId) => deleteTask(taskId, setTasks)}
                   moveTask={(taskId, newColumnId) =>

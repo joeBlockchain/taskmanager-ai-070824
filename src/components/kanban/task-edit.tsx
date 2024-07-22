@@ -24,6 +24,7 @@ import {
   Task as TaskType,
   Deliverable,
   DeliverableContent,
+  Deliverable as DeliverableType,
 } from "@/components/kanban/types";
 import {
   PencilLine,
@@ -34,6 +35,9 @@ import {
   Trash,
   Pencil,
   Paperclip,
+  FilePenLine,
+  ExternalLink,
+  Pen,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -68,10 +72,16 @@ const supabase = createClient();
 interface TaskEditProps {
   task: TaskType;
   setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>;
+  deliverables: DeliverableType[];
+  setDeliverables: React.Dispatch<React.SetStateAction<DeliverableType[]>>;
 }
 
-export default function TaskEdit({ task, setTasks }: TaskEditProps) {
-  const [user, setUser] = useState<any>(null);
+export default function TaskEdit({
+  task,
+  setTasks,
+  deliverables,
+  setDeliverables,
+}: TaskEditProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
@@ -79,11 +89,9 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
     task.due_date ? new Date(task.due_date) : undefined
   );
   const [priority, setPriority] = useState(task.priority);
-  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
-  const [newDeliverable, setNewDeliverable] =
-    useState<Partial<Deliverable> | null>(null);
-  const [editingDeliverable, setEditingDeliverable] = useState<string | null>(
-    null
+
+  const [taskDeliverables, setTaskDeliverables] = useState<DeliverableType[]>(
+    []
   );
 
   const [deliverableContent, setDeliverableContent] = useState<
@@ -98,40 +106,13 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
     setDescription(task.description);
     setDueDate(task.due_date ? new Date(task.due_date) : undefined);
     setPriority(task.priority);
-  }, [task]);
 
-  useEffect(() => {
-    fetchDeliverables();
-    fetchUser();
-  }, [task.id]);
-
-  async function fetchUser() {
-    try {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-      if (error) throw error;
-
-      setUser(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
+    if (Array.isArray(deliverables)) {
+      setTaskDeliverables(deliverables.filter((d) => d.task_id === task.id));
+    } else {
+      setTaskDeliverables([]);
     }
-  }
-
-  const fetchDeliverables = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("deliverables")
-        .select("*")
-        .eq("task_id", task.id);
-
-      if (error) throw error;
-      setDeliverables(data);
-    } catch (error) {
-      console.error("Error fetching deliverables:", error);
-    }
-  };
+  }, [task, deliverables]);
 
   const handleSaveTaskEdit = async () => {
     try {
@@ -170,61 +151,6 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
     setDueDate(task.due_date ? new Date(task.due_date) : undefined);
     setPriority(task.priority);
     setIsOpen(false);
-  };
-
-  const handleAddDeliverable = () => {
-    setNewDeliverable({
-      title: "Deliverable Title",
-      status: "Not Started",
-      description: "Deliverable Description",
-      due_date: new Date().toISOString(),
-    });
-  };
-
-  const handleSaveDeliverable = async () => {
-    if (!newDeliverable || !newDeliverable.title || !user) return;
-
-    const result = await addDeliverable(
-      task.id,
-      user.id,
-      newDeliverable.title,
-      newDeliverable.status || "Not Started",
-      setTasks,
-      newDeliverable.description,
-      newDeliverable.due_date
-    );
-
-    if (result && result.newDeliverable) {
-      setNewDeliverable(null);
-      setDeliverables((prev) => [...prev, result.newDeliverable]);
-    }
-  };
-
-  const handleCancelDeliverable = () => {
-    setNewDeliverable(null);
-  };
-
-  const handleEditDeliverable = (deliverableId: string) => {
-    setEditingDeliverable(deliverableId);
-  };
-
-  const handleSaveEditedDeliverable = async (deliverable: Deliverable) => {
-    try {
-      const { error } = await supabase
-        .from("deliverables")
-        .update(deliverable)
-        .eq("id", deliverable.id);
-
-      if (error) throw error;
-
-      setEditingDeliverable(null);
-    } catch (error) {
-      console.error("Error updating deliverable:", error);
-    }
-  };
-
-  const handleCancelEditDeliverable = () => {
-    setEditingDeliverable(null);
   };
 
   const handleDeleteDeliverable = async (deliverableId: string) => {
@@ -270,6 +196,24 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
         ...prev,
         [deliverableId]: true,
       }));
+    }
+  };
+
+  const handleAddDeliverable = async () => {
+    try {
+      const { data, error } = await supabase.from("deliverables").insert({
+        task_id: task.id,
+        title: "New Deliverable",
+        description: "Deliverable Description",
+        status: "Not Started",
+        due_date: new Date().toISOString(),
+      });
+
+      console.log("data", data);
+      console.log("error", error);
+    } catch (error) {
+      console.error("Error adding deliverable:", error);
+      // Handle error (e.g., show an error message to the user)
     }
   };
 
@@ -376,445 +320,168 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {deliverables.map((deliverable) => (
+                          {taskDeliverables?.map((deliverable) => (
                             <TableRow key={deliverable.id}>
-                              {editingDeliverable === deliverable.id ? (
-                                <>
-                                  <TableCell>
-                                    <Input
-                                      value={deliverable.title}
-                                      onChange={(e) =>
-                                        setDeliverables((prev) =>
-                                          prev.map((d) =>
-                                            d.id === deliverable.id
-                                              ? { ...d, title: e.target.value }
-                                              : d
-                                          )
-                                        )
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell className="hidden xs:table-cell">
-                                    <Select
-                                      value={deliverable.status}
-                                      onValueChange={(
-                                        value:
-                                          | "Not Started"
-                                          | "In Progress"
-                                          | "Completed"
-                                          | "Approved"
-                                          | "Rejected"
-                                      ) =>
-                                        setDeliverables((prev) =>
-                                          prev.map((d) =>
-                                            d.id === deliverable.id
-                                              ? { ...d, status: value }
-                                              : d
-                                          )
-                                        )
-                                      }
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Status" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="Not Started">
-                                          Not Started
-                                        </SelectItem>
-                                        <SelectItem value="In Progress">
-                                          In Progress
-                                        </SelectItem>
-                                        <SelectItem value="Completed">
-                                          Completed
-                                        </SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </TableCell>
-                                  <TableCell className="hidden xs:table-cell">
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          className="w-full justify-start text-left font-normal"
-                                        >
-                                          <CalendarIcon className="mr-2 h-4 w-4" />
-                                          {deliverable.due_date
-                                            ? format(
-                                                new Date(deliverable.due_date),
-                                                "PPP"
-                                              )
-                                            : "Pick a date"}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                          mode="single"
-                                          selected={
-                                            deliverable.due_date
-                                              ? new Date(deliverable.due_date)
-                                              : undefined
-                                          }
-                                          onSelect={(date) =>
-                                            setDeliverables((prev) =>
-                                              prev.map((d) =>
-                                                d.id === deliverable.id
-                                                  ? {
-                                                      ...d,
-                                                      due_date:
-                                                        date?.toISOString(),
-                                                    }
-                                                  : d
-                                              )
-                                            )
-                                          }
-                                          initialFocus
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
-                                  </TableCell>
-                                  <TableCell className="hidden sm:table-cell">
-                                    <Input
-                                      value={deliverable.description || ""}
-                                      onChange={(e) =>
-                                        setDeliverables((prev) =>
-                                          prev.map((d) =>
-                                            d.id === deliverable.id
-                                              ? {
-                                                  ...d,
-                                                  description: e.target.value,
-                                                }
-                                              : d
-                                          )
-                                        )
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex space-x-2">
-                                      <Button
-                                        size="sm"
-                                        onClick={() =>
-                                          handleSaveEditedDeliverable(
-                                            deliverable
-                                          )
-                                        }
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={handleCancelEditDeliverable}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </>
-                              ) : (
-                                <>
-                                  <TableCell className="font-medium">
-                                    {deliverable.title}
-                                  </TableCell>
-                                  <TableCell className="hidden xs:table-cell">
-                                    {deliverable.status}
-                                  </TableCell>
-                                  <TableCell className="hidden xs:table-cell">
-                                    {deliverable.due_date
-                                      ? format(
-                                          new Date(deliverable.due_date),
-                                          "PPP"
-                                        )
-                                      : "N/A"}
-                                  </TableCell>
-                                  <TableCell className="hidden sm:table-cell">
-                                    {deliverable.description || "N/A"}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex space-x-2">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          handleEditDeliverable(deliverable.id)
-                                        }
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          handleDeleteDeliverable(
-                                            deliverable.id
-                                          )
-                                        }
-                                      >
-                                        <Trash className="h-4 w-4" />
-                                      </Button>
-                                      <Sheet>
-                                        <SheetTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() =>
-                                              fetchDeliverableContent(
-                                                deliverable.id
-                                              )
-                                            }
-                                          >
-                                            <Paperclip className="h-4 w-4" />
-                                          </Button>
-                                        </SheetTrigger>
-                                        <SheetContent side="left" className="">
-                                          <ScrollArea className="h-[calc(100vh-2rem)] pr-4">
-                                            <div className="space-y-6">
-                                              <Accordion
-                                                type="single"
-                                                collapsible
-                                                className="w-full"
-                                              >
-                                                <AccordionItem value="task-details">
-                                                  <AccordionTrigger>
-                                                    Task Details
-                                                  </AccordionTrigger>
-                                                  <AccordionContent>
-                                                    <div className="space-y-2">
-                                                      <p>
-                                                        <strong>Title:</strong>{" "}
-                                                        {task.title}
-                                                      </p>
-                                                      <p>
-                                                        <strong>
-                                                          Description:
-                                                        </strong>{" "}
-                                                        {task.description}
-                                                      </p>
-                                                      <p>
-                                                        <strong>
-                                                          Due Date:
-                                                        </strong>{" "}
-                                                        {task.due_date
-                                                          ? format(
-                                                              new Date(
-                                                                task.due_date
-                                                              ),
-                                                              "PPP"
-                                                            )
-                                                          : "N/A"}
-                                                      </p>
-                                                      <p>
-                                                        <strong>
-                                                          Priority:
-                                                        </strong>{" "}
-                                                        {task.priority}
-                                                      </p>
-                                                    </div>
-                                                  </AccordionContent>
-                                                </AccordionItem>
-                                                <AccordionItem value="deliverable-details">
-                                                  <AccordionTrigger>
-                                                    Deliverable Details
-                                                  </AccordionTrigger>
-                                                  <AccordionContent>
-                                                    <div className="space-y-2">
-                                                      <p>
-                                                        <strong>Title:</strong>{" "}
-                                                        {deliverable.title}
-                                                      </p>
-                                                      <p>
-                                                        <strong>Status:</strong>{" "}
-                                                        {deliverable.status}
-                                                      </p>
-                                                      <p>
-                                                        <strong>
-                                                          Due Date:
-                                                        </strong>{" "}
-                                                        {deliverable.due_date
-                                                          ? format(
-                                                              new Date(
-                                                                deliverable.due_date
-                                                              ),
-                                                              "PPP"
-                                                            )
-                                                          : "N/A"}
-                                                      </p>
-                                                      <p>
-                                                        <strong>
-                                                          Description:
-                                                        </strong>{" "}
-                                                        {deliverable.description ||
-                                                          "N/A"}
-                                                      </p>
-                                                    </div>
-                                                  </AccordionContent>
-                                                </AccordionItem>
-                                              </Accordion>
-                                              <div>
-                                                <h3 className="text-lg font-semibold mb-2">
-                                                  Deliverable Content
-                                                </h3>
-                                                {deliverableContentError[
-                                                  deliverable.id
-                                                ] ? (
-                                                  <p className="text-sm text-red-500">
-                                                    Error loading content.
-                                                    Please try again.
-                                                  </p>
-                                                ) : deliverableContent[
-                                                    deliverable.id
-                                                  ] === null ? (
-                                                  <p className="text-sm">
-                                                    No content available for
-                                                    this deliverable.
-                                                  </p>
-                                                ) : (
-                                                  <p className="text-sm">
-                                                    {
-                                                      deliverableContent[
-                                                        deliverable.id
-                                                      ]?.content
-                                                    }
-                                                  </p>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </ScrollArea>
-                                        </SheetContent>
-                                      </Sheet>
-                                    </div>
-                                  </TableCell>
-                                </>
-                              )}
-                            </TableRow>
-                          ))}
-                          {newDeliverable && (
-                            <TableRow>
-                              <TableCell>
-                                <Input
-                                  placeholder="Title"
-                                  value={newDeliverable.title}
-                                  onChange={(e) =>
-                                    setNewDeliverable({
-                                      ...newDeliverable,
-                                      title: e.target.value,
-                                    })
-                                  }
-                                />
+                              <TableCell className="font-medium">
+                                {deliverable.title}
                               </TableCell>
-                              <TableCell>
-                                <Select
-                                  value={newDeliverable.status}
-                                  onValueChange={(
-                                    value:
-                                      | "Not Started"
-                                      | "In Progress"
-                                      | "Completed"
-                                      | "Approved"
-                                      | "Rejected"
-                                  ) =>
-                                    setNewDeliverable({
-                                      ...newDeliverable,
-                                      status: value,
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Not Started">
-                                      Not Started
-                                    </SelectItem>
-                                    <SelectItem value="In Progress">
-                                      In Progress
-                                    </SelectItem>
-                                    <SelectItem value="Completed">
-                                      Completed
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
+                              <TableCell className="hidden xs:table-cell">
+                                {deliverable.status}
                               </TableCell>
-                              <TableCell>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      className="w-full justify-start text-left font-normal"
-                                    >
-                                      <CalendarIcon className="mr-2 h-4 w-4" />
-                                      {newDeliverable.due_date
-                                        ? format(
-                                            new Date(newDeliverable.due_date),
-                                            "PPP"
-                                          )
-                                        : "Pick a date"}
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                      mode="single"
-                                      selected={
-                                        newDeliverable.due_date
-                                          ? new Date(newDeliverable.due_date)
-                                          : undefined
-                                      }
-                                      onSelect={(date) =>
-                                        setNewDeliverable({
-                                          ...newDeliverable,
-                                          due_date: date?.toISOString(),
-                                        })
-                                      }
-                                      initialFocus
-                                    />
-                                  </PopoverContent>
-                                </Popover>
+                              <TableCell className="hidden xs:table-cell">
+                                {deliverable.due_date
+                                  ? format(
+                                      new Date(deliverable.due_date),
+                                      "PPP"
+                                    )
+                                  : "N/A"}
                               </TableCell>
-                              <TableCell>
-                                <Input
-                                  placeholder="Description"
-                                  value={newDeliverable.description}
-                                  onChange={(e) =>
-                                    setNewDeliverable({
-                                      ...newDeliverable,
-                                      description: e.target.value,
-                                    })
-                                  }
-                                />
+                              <TableCell className="hidden sm:table-cell">
+                                {deliverable.description || "N/A"}
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-2">
                                   <Button
                                     size="sm"
-                                    onClick={handleSaveDeliverable}
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
                                     variant="outline"
-                                    onClick={handleCancelDeliverable}
+                                    onClick={() =>
+                                      handleDeleteDeliverable(deliverable.id)
+                                    }
                                   >
-                                    <X className="h-4 w-4" />
+                                    <Trash className="h-4 w-4" />
                                   </Button>
+                                  <Sheet>
+                                    <SheetTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          fetchDeliverableContent(
+                                            deliverable.id
+                                          )
+                                        }
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </SheetTrigger>
+                                    <SheetContent side="left" className="">
+                                      <ScrollArea className="h-[calc(100vh-2rem)] pr-4">
+                                        <div className="space-y-6">
+                                          <Accordion
+                                            type="single"
+                                            collapsible
+                                            className="w-full"
+                                          >
+                                            <AccordionItem value="task-details">
+                                              <AccordionTrigger>
+                                                {task.title}
+                                              </AccordionTrigger>
+                                              <AccordionContent>
+                                                <div className="space-y-2">
+                                                  <p>
+                                                    <strong>
+                                                      Description:
+                                                    </strong>{" "}
+                                                    {task.description}
+                                                  </p>
+                                                  <p>
+                                                    <strong>Due Date:</strong>{" "}
+                                                    {task.due_date
+                                                      ? format(
+                                                          new Date(
+                                                            task.due_date
+                                                          ),
+                                                          "PPP"
+                                                        )
+                                                      : "N/A"}
+                                                  </p>
+                                                  <p>
+                                                    <strong>Priority:</strong>{" "}
+                                                    {task.priority}
+                                                  </p>
+                                                </div>
+                                              </AccordionContent>
+                                            </AccordionItem>
+                                            <AccordionItem value="deliverable-details">
+                                              <AccordionTrigger>
+                                                {deliverable.title}
+                                              </AccordionTrigger>
+                                              <AccordionContent>
+                                                <div className="space-y-2">
+                                                  <p>
+                                                    <strong>Status:</strong>{" "}
+                                                    {deliverable.status}
+                                                  </p>
+                                                  <p>
+                                                    <strong>Due Date:</strong>{" "}
+                                                    {deliverable.due_date
+                                                      ? format(
+                                                          new Date(
+                                                            deliverable.due_date
+                                                          ),
+                                                          "PPP"
+                                                        )
+                                                      : "N/A"}
+                                                  </p>
+                                                  <p>
+                                                    <strong>
+                                                      Description:
+                                                    </strong>{" "}
+                                                    {deliverable.description ||
+                                                      "N/A"}
+                                                  </p>
+                                                </div>
+                                              </AccordionContent>
+                                            </AccordionItem>
+                                          </Accordion>
+                                          <div>
+                                            <h3 className="text-lg font-semibold mb-2">
+                                              Deliverable Content
+                                            </h3>
+                                            {deliverableContentError[
+                                              deliverable.id
+                                            ] ? (
+                                              <p className="text-sm text-red-500">
+                                                Error loading content. Please
+                                                try again.
+                                              </p>
+                                            ) : deliverableContent[
+                                                deliverable.id
+                                              ] === null ? (
+                                              <p className="text-sm">
+                                                No content available for this
+                                                deliverable.
+                                              </p>
+                                            ) : (
+                                              <p className="text-sm">
+                                                {
+                                                  deliverableContent[
+                                                    deliverable.id
+                                                  ]?.content
+                                                }
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </ScrollArea>
+                                    </SheetContent>
+                                  </Sheet>
                                 </div>
                               </TableCell>
                             </TableRow>
-                          )}
+                          ))}
                         </TableBody>
                       </Table>
-                      {/* <ScrollBar orientation="horizontal" /> */}
                     </div>
-                    {!newDeliverable && (
-                      <div className="flex justify-start p-2">
-                        <Button
-                          onClick={handleAddDeliverable}
-                          variant="secondary"
-                        >
-                          <Plus className="h-4 w-4 mr-2" /> Add Deliverable
-                        </Button>
-                      </div>
-                    )}
+
+                    <div className="flex justify-start p-2">
+                      <Button
+                        onClick={handleAddDeliverable}
+                        variant="secondary"
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add Deliverable
+                      </Button>
+                    </div>
                   </Card>
                 </div>
               </div>

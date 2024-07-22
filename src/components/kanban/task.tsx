@@ -29,6 +29,7 @@ import {
 import {
   Task as TaskType,
   Column as ColumnType,
+  Deliverable as DeliverableType,
 } from "@/components/kanban/types";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,8 @@ interface TaskProps {
   deleteTask: (taskId: string) => void;
   moveTask: (taskId: string, newColumnId: string) => void;
   columns: ColumnType[];
+  deliverables: DeliverableType[];
+  setDeliverables: React.Dispatch<React.SetStateAction<DeliverableType[]>>;
 }
 
 export default function Task({
@@ -50,6 +53,8 @@ export default function Task({
   deleteTask,
   moveTask,
   columns,
+  deliverables,
+  setDeliverables,
 }: TaskProps) {
   const currentColumnIndex = columns.findIndex(
     (col) => col.id === task.column_id
@@ -67,7 +72,12 @@ export default function Task({
       </Button>
       <div className="absolute hidden group-hover:flex  w-[1.5rem] -right-[.5rem] top-[.5rem] ">
         <div className="flex flex-col space-y-1">
-          <TaskEdit task={task} setTasks={setTasks} />
+          <TaskEdit
+            task={task}
+            setTasks={setTasks}
+            deliverables={deliverables}
+            setDeliverables={setDeliverables}
+          />
           <Button
             variant="outline"
             className="w-[2rem] h-[2rem] p-0 m-0"
