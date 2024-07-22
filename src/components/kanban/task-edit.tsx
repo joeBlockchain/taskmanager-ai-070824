@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { addDeliverable } from "@/components/kanban/actions";
-import { ScrollArea } from "../ui/scroll-area";
+import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 
 const supabase = createClient();
 
@@ -343,354 +343,361 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                 </div>
                 <div className="grid items-center gap-1.5">
                   <Label className="text-start">Deliverables</Label>
-                  {/* <Card>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[100px]">Title</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Due Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="w-[100px]">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {deliverables.map((deliverable) => (
-                          <TableRow key={deliverable.id}>
-                            {editingDeliverable === deliverable.id ? (
-                              <>
-                                <TableCell>
-                                  <Input
-                                    value={deliverable.title}
-                                    onChange={(e) =>
-                                      setDeliverables((prev) =>
-                                        prev.map((d) =>
-                                          d.id === deliverable.id
-                                            ? { ...d, title: e.target.value }
-                                            : d
-                                        )
-                                      )
-                                    }
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Select
-                                    value={deliverable.status}
-                                    onValueChange={(
-                                      value:
-                                        | "Not Started"
-                                        | "In Progress"
-                                        | "Completed"
-                                        | "Approved"
-                                        | "Rejected"
-                                    ) =>
-                                      setDeliverables((prev) =>
-                                        prev.map((d) =>
-                                          d.id === deliverable.id
-                                            ? { ...d, status: value }
-                                            : d
-                                        )
-                                      )
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Not Started">
-                                        Not Started
-                                      </SelectItem>
-                                      <SelectItem value="In Progress">
-                                        In Progress
-                                      </SelectItem>
-                                      <SelectItem value="Completed">
-                                        Completed
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                                <TableCell>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        className="w-full justify-start text-left font-normal"
-                                      >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {deliverable.due_date
-                                          ? format(
-                                              new Date(deliverable.due_date),
-                                              "PPP"
-                                            )
-                                          : "Pick a date"}
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                      <Calendar
-                                        mode="single"
-                                        selected={
-                                          deliverable.due_date
-                                            ? new Date(deliverable.due_date)
-                                            : undefined
-                                        }
-                                        onSelect={(date) =>
-                                          setDeliverables((prev) =>
-                                            prev.map((d) =>
-                                              d.id === deliverable.id
-                                                ? {
-                                                    ...d,
-                                                    due_date:
-                                                      date?.toISOString(),
-                                                  }
-                                                : d
-                                            )
+                  <Card>
+                    <ScrollArea className="w-[76vw] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[100px]">Title</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Due Date</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {deliverables.map((deliverable) => (
+                            <TableRow key={deliverable.id}>
+                              {editingDeliverable === deliverable.id ? (
+                                <>
+                                  <TableCell>
+                                    <Input
+                                      value={deliverable.title}
+                                      onChange={(e) =>
+                                        setDeliverables((prev) =>
+                                          prev.map((d) =>
+                                            d.id === deliverable.id
+                                              ? { ...d, title: e.target.value }
+                                              : d
                                           )
-                                        }
-                                        initialFocus
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={deliverable.description || ""}
-                                    onChange={(e) =>
-                                      setDeliverables((prev) =>
-                                        prev.map((d) =>
-                                          d.id === deliverable.id
-                                            ? {
-                                                ...d,
-                                                description: e.target.value,
-                                              }
-                                            : d
                                         )
-                                      )
-                                    }
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex space-x-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={() =>
-                                        handleSaveEditedDeliverable(deliverable)
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Select
+                                      value={deliverable.status}
+                                      onValueChange={(
+                                        value:
+                                          | "Not Started"
+                                          | "In Progress"
+                                          | "Completed"
+                                          | "Approved"
+                                          | "Rejected"
+                                      ) =>
+                                        setDeliverables((prev) =>
+                                          prev.map((d) =>
+                                            d.id === deliverable.id
+                                              ? { ...d, status: value }
+                                              : d
+                                          )
+                                        )
                                       }
                                     >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={handleCancelEditDeliverable}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </>
-                            ) : (
-                              <>
-                                <TableCell className="font-medium">
-                                  {deliverable.title}
-                                </TableCell>
-                                <TableCell>{deliverable.status}</TableCell>
-                                <TableCell>
-                                  {deliverable.due_date
-                                    ? format(
-                                        new Date(deliverable.due_date),
-                                        "PPP"
-                                      )
-                                    : "N/A"}
-                                </TableCell>
-                                <TableCell>
-                                  {deliverable.description || "N/A"}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex space-x-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        handleEditDeliverable(deliverable.id)
-                                      }
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        handleDeleteDeliverable(deliverable.id)
-                                      }
-                                    >
-                                      <Trash className="h-4 w-4" />
-                                    </Button>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Status" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Not Started">
+                                          Not Started
+                                        </SelectItem>
+                                        <SelectItem value="In Progress">
+                                          In Progress
+                                        </SelectItem>
+                                        <SelectItem value="Completed">
+                                          Completed
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell>
                                     <Popover>
                                       <PopoverTrigger asChild>
                                         <Button
-                                          size="sm"
                                           variant="outline"
-                                          onClick={() =>
-                                            fetchDeliverableContent(
-                                              deliverable.id
-                                            )
-                                          }
+                                          className="w-full justify-start text-left font-normal"
                                         >
-                                          <Paperclip className="h-4 w-4" />
+                                          <CalendarIcon className="mr-2 h-4 w-4" />
+                                          {deliverable.due_date
+                                            ? format(
+                                                new Date(deliverable.due_date),
+                                                "PPP"
+                                              )
+                                            : "Pick a date"}
                                         </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent className="w-80">
-                                        <div className="space-y-2">
-                                          <h4 className="font-medium">
-                                            Deliverable Content
-                                          </h4>
-                                          {deliverableContentError[
-                                            deliverable.id
-                                          ] ? (
-                                            <p className="text-sm text-red-500">
-                                              Error loading content. Please try
-                                              again.
-                                            </p>
-                                          ) : deliverableContent[
-                                              deliverable.id
-                                            ] === null ? (
-                                            <p className="text-sm">
-                                              No content available for this
-                                              deliverable.
-                                            </p>
-                                          ) : (
-                                            <p className="text-sm">
-                                              {
-                                                deliverableContent[
-                                                  deliverable.id
-                                                ]?.content
-                                              }
-                                            </p>
-                                          )}
-                                        </div>
+                                      <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                          mode="single"
+                                          selected={
+                                            deliverable.due_date
+                                              ? new Date(deliverable.due_date)
+                                              : undefined
+                                          }
+                                          onSelect={(date) =>
+                                            setDeliverables((prev) =>
+                                              prev.map((d) =>
+                                                d.id === deliverable.id
+                                                  ? {
+                                                      ...d,
+                                                      due_date:
+                                                        date?.toISOString(),
+                                                    }
+                                                  : d
+                                              )
+                                            )
+                                          }
+                                          initialFocus
+                                        />
                                       </PopoverContent>
                                     </Popover>
-                                  </div>
-                                </TableCell>
-                              </>
-                            )}
-                          </TableRow>
-                        ))}
-                        {newDeliverable && (
-                          <TableRow>
-                            <TableCell>
-                              <Input
-                                placeholder="Title"
-                                value={newDeliverable.title}
-                                onChange={(e) =>
-                                  setNewDeliverable({
-                                    ...newDeliverable,
-                                    title: e.target.value,
-                                  })
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={newDeliverable.status}
-                                onValueChange={(
-                                  value:
-                                    | "Not Started"
-                                    | "In Progress"
-                                    | "Completed"
-                                    | "Approved"
-                                    | "Rejected"
-                                ) =>
-                                  setNewDeliverable({
-                                    ...newDeliverable,
-                                    status: value,
-                                  })
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Not Started">
-                                    Not Started
-                                  </SelectItem>
-                                  <SelectItem value="In Progress">
-                                    In Progress
-                                  </SelectItem>
-                                  <SelectItem value="Completed">
-                                    Completed
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    className="w-full justify-start text-left font-normal"
-                                  >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {newDeliverable.due_date
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={deliverable.description || ""}
+                                      onChange={(e) =>
+                                        setDeliverables((prev) =>
+                                          prev.map((d) =>
+                                            d.id === deliverable.id
+                                              ? {
+                                                  ...d,
+                                                  description: e.target.value,
+                                                }
+                                              : d
+                                          )
+                                        )
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          handleSaveEditedDeliverable(
+                                            deliverable
+                                          )
+                                        }
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleCancelEditDeliverable}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="font-medium">
+                                    {deliverable.title}
+                                  </TableCell>
+                                  <TableCell>{deliverable.status}</TableCell>
+                                  <TableCell>
+                                    {deliverable.due_date
                                       ? format(
-                                          new Date(newDeliverable.due_date),
+                                          new Date(deliverable.due_date),
                                           "PPP"
                                         )
-                                      : "Pick a date"}
+                                      : "N/A"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {deliverable.description || "N/A"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleEditDeliverable(deliverable.id)
+                                        }
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleDeleteDeliverable(
+                                            deliverable.id
+                                          )
+                                        }
+                                      >
+                                        <Trash className="h-4 w-4" />
+                                      </Button>
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                              fetchDeliverableContent(
+                                                deliverable.id
+                                              )
+                                            }
+                                          >
+                                            <Paperclip className="h-4 w-4" />
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80">
+                                          <div className="space-y-2">
+                                            <h4 className="font-medium">
+                                              Deliverable Content
+                                            </h4>
+                                            {deliverableContentError[
+                                              deliverable.id
+                                            ] ? (
+                                              <p className="text-sm text-red-500">
+                                                Error loading content. Please
+                                                try again.
+                                              </p>
+                                            ) : deliverableContent[
+                                                deliverable.id
+                                              ] === null ? (
+                                              <p className="text-sm">
+                                                No content available for this
+                                                deliverable.
+                                              </p>
+                                            ) : (
+                                              <p className="text-sm">
+                                                {
+                                                  deliverableContent[
+                                                    deliverable.id
+                                                  ]?.content
+                                                }
+                                              </p>
+                                            )}
+                                          </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              )}
+                            </TableRow>
+                          ))}
+                          {newDeliverable && (
+                            <TableRow>
+                              <TableCell>
+                                <Input
+                                  placeholder="Title"
+                                  value={newDeliverable.title}
+                                  onChange={(e) =>
+                                    setNewDeliverable({
+                                      ...newDeliverable,
+                                      title: e.target.value,
+                                    })
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={newDeliverable.status}
+                                  onValueChange={(
+                                    value:
+                                      | "Not Started"
+                                      | "In Progress"
+                                      | "Completed"
+                                      | "Approved"
+                                      | "Rejected"
+                                  ) =>
+                                    setNewDeliverable({
+                                      ...newDeliverable,
+                                      status: value,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Not Started">
+                                      Not Started
+                                    </SelectItem>
+                                    <SelectItem value="In Progress">
+                                      In Progress
+                                    </SelectItem>
+                                    <SelectItem value="Completed">
+                                      Completed
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className="w-full justify-start text-left font-normal"
+                                    >
+                                      <CalendarIcon className="mr-2 h-4 w-4" />
+                                      {newDeliverable.due_date
+                                        ? format(
+                                            new Date(newDeliverable.due_date),
+                                            "PPP"
+                                          )
+                                        : "Pick a date"}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={
+                                        newDeliverable.due_date
+                                          ? new Date(newDeliverable.due_date)
+                                          : undefined
+                                      }
+                                      onSelect={(date) =>
+                                        setNewDeliverable({
+                                          ...newDeliverable,
+                                          due_date: date?.toISOString(),
+                                        })
+                                      }
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  placeholder="Description"
+                                  value={newDeliverable.description}
+                                  onChange={(e) =>
+                                    setNewDeliverable({
+                                      ...newDeliverable,
+                                      description: e.target.value,
+                                    })
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveDeliverable}
+                                  >
+                                    <Check className="h-4 w-4" />
                                   </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                    mode="single"
-                                    selected={
-                                      newDeliverable.due_date
-                                        ? new Date(newDeliverable.due_date)
-                                        : undefined
-                                    }
-                                    onSelect={(date) =>
-                                      setNewDeliverable({
-                                        ...newDeliverable,
-                                        due_date: date?.toISOString(),
-                                      })
-                                    }
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                placeholder="Description"
-                                value={newDeliverable.description}
-                                onChange={(e) =>
-                                  setNewDeliverable({
-                                    ...newDeliverable,
-                                    description: e.target.value,
-                                  })
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button
-                                  size="sm"
-                                  onClick={handleSaveDeliverable}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={handleCancelDeliverable}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelDeliverable}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
                     {!newDeliverable && (
                       <div className="flex justify-start p-2">
                         <Button
@@ -701,7 +708,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                         </Button>
                       </div>
                     )}
-                  </Card> */}
+                  </Card>
                 </div>
               </div>
             </DialogDescription>
