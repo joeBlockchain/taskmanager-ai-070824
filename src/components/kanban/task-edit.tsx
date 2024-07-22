@@ -66,7 +66,6 @@ interface TaskEditProps {
 }
 
 export default function TaskEdit({ task, setTasks }: TaskEditProps) {
-  console.log("task", task);
   const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(task.title);
@@ -269,9 +268,10 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
           <PencilLine className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] m-0">
-        <DialogHeader className="">
-          <ScrollArea className="h-[70vh]">
+      {/* CONTAINTER THAT THE CARD WITH THE DIV CANNOT BE BIGGER THAN THE DIALOGCONTENT */}
+      <DialogContent className="max-w-lg sm:max-w-2xl md:max-w-3xl max-h-[90vh] m-0 py-4 px-2">
+        <ScrollArea className="h-[70vh]">
+          <DialogHeader className="px-4 py-2">
             <DialogDescription className="">
               <div className="space-y-4 px-[.2rem]">
                 <div className="grid items-center gap-1.5">
@@ -343,15 +343,23 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                 </div>
                 <div className="grid items-center gap-1.5">
                   <Label className="text-start">Deliverables</Label>
-                  <Card className="w-[76vw]">
+                  {/* CARD MUST CONSTRAIN TABLE CONTENT AND CANNOT GROW BIGGER THAN DIALOGCONTENT */}
+                  <Card className="">
                     <div className="overflow-x-auto">
                       <Table className="w-full">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[200px]">Title</TableHead>
-                            <TableHead className="w-[150px]">Status</TableHead>
-                            <TableHead className="">Due Date</TableHead>
-                            <TableHead className="">Description</TableHead>
+                            <TableHead className="">Title</TableHead>
+                            <TableHead className="hidden xs:table-cell">
+                              Status
+                            </TableHead>
+                            <TableHead className="hidden xs:table-cell">
+                              Due Date
+                            </TableHead>
+                            <TableHead className="hidden sm:table-cell">
+                              Description
+                            </TableHead>
+
                             <TableHead className="w-[150px]">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -374,7 +382,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                       }
                                     />
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell className="hidden xs:table-cell">
                                     <Select
                                       value={deliverable.status}
                                       onValueChange={(
@@ -410,7 +418,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                       </SelectContent>
                                     </Select>
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell className="hidden xs:table-cell">
                                     <Popover>
                                       <PopoverTrigger asChild>
                                         <Button
@@ -452,7 +460,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                       </PopoverContent>
                                     </Popover>
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell className="hidden sm:table-cell">
                                     <Input
                                       value={deliverable.description || ""}
                                       onChange={(e) =>
@@ -496,8 +504,10 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                   <TableCell className="font-medium">
                                     {deliverable.title}
                                   </TableCell>
-                                  <TableCell>{deliverable.status}</TableCell>
-                                  <TableCell>
+                                  <TableCell className="hidden xs:table-cell">
+                                    {deliverable.status}
+                                  </TableCell>
+                                  <TableCell className="hidden xs:table-cell">
                                     {deliverable.due_date
                                       ? format(
                                           new Date(deliverable.due_date),
@@ -505,7 +515,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                         )
                                       : "N/A"}
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell className="hidden sm:table-cell">
                                     {deliverable.description || "N/A"}
                                   </TableCell>
                                   <TableCell>
@@ -712,10 +722,10 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                 </div>
               </div>
             </DialogDescription>
-          </ScrollArea>
-        </DialogHeader>
-        <DialogFooter className="">
-          <div className="flex flex-col gap-4">
+          </DialogHeader>
+        </ScrollArea>
+        <DialogFooter className="px-2">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Button variant="outline" onClick={handleCancelTaskEdit}>
               Cancel
             </Button>
