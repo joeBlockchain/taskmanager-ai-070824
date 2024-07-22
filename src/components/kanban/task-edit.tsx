@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -263,19 +263,18 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-      <AlertDialogTrigger asChild>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
         <Button variant="outline" className="w-[2rem] h-[2rem] p-0 m-0">
           <PencilLine className="h-4 w-4" />
         </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent className="max-w-3xl max-h-[90vh]">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Edit Task</AlertDialogTitle>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[90vh] m-0">
+        <DialogHeader className="">
           <ScrollArea className="h-[70vh]">
-            <AlertDialogDescription>
-              <div className="space-y-4">
-                <div className="grid items-center gap-1.5">
+            <DialogDescription>
+              <div className="space-y-4 px-[.2rem]">
+                <div className="grid items-center gap-1.5 ">
                   <Label htmlFor="title">Title</Label>
                   <Input
                     id="title"
@@ -697,18 +696,18 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                   </Card>
                 </div>
               </div>
-            </AlertDialogDescription>
+            </DialogDescription>
           </ScrollArea>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
+        </DialogHeader>
+        <DialogFooter>
           <Button variant="outline" onClick={handleCancelTaskEdit}>
             Cancel
           </Button>
           <Button onClick={handleSaveTaskEdit} variant="secondary">
             Save
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
