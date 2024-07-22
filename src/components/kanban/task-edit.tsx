@@ -566,10 +566,7 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                             <Paperclip className="h-4 w-4" />
                                           </Button>
                                         </SheetTrigger>
-                                        <SheetContent
-                                          side="right"
-                                          className="w-[400px] sm:w-[540px]"
-                                        >
+                                        <SheetContent side="left" className="">
                                           <ScrollArea className="h-[calc(100vh-2rem)] pr-4">
                                             <div className="space-y-6">
                                               <Accordion
