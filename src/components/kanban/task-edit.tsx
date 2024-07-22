@@ -343,16 +343,16 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                 </div>
                 <div className="grid items-center gap-1.5">
                   <Label className="text-start">Deliverables</Label>
-                  <Card>
-                    <ScrollArea className="w-[76vw] overflow-auto">
-                      <Table>
+                  <Card className="w-[76vw]">
+                    <div className="overflow-x-auto">
+                      <Table className="w-full">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[100px]">Title</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Due Date</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead className="w-[100px]">Actions</TableHead>
+                            <TableHead className="w-[200px]">Title</TableHead>
+                            <TableHead className="w-[150px]">Status</TableHead>
+                            <TableHead className="">Due Date</TableHead>
+                            <TableHead className="">Description</TableHead>
+                            <TableHead className="w-[150px]">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -696,8 +696,8 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                           )}
                         </TableBody>
                       </Table>
-                      <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
+                      {/* <ScrollBar orientation="horizontal" /> */}
+                    </div>
                     {!newDeliverable && (
                       <div className="flex justify-start p-2">
                         <Button
