@@ -66,6 +66,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { DeliverableContentSheet } from "@/components/kanban/deliverable";
 
 const supabase = createClient();
 
@@ -217,6 +218,14 @@ export default function TaskEdit({
     }
   };
 
+  const handleUpdateDeliverable = (updatedDeliverable: DeliverableType) => {
+    setDeliverables((prevDeliverables) =>
+      prevDeliverables.map((d) =>
+        d.id === updatedDeliverable.id ? updatedDeliverable : d
+      )
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -350,122 +359,11 @@ export default function TaskEdit({
                                   >
                                     <Trash className="h-4 w-4" />
                                   </Button>
-                                  <Sheet>
-                                    <SheetTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          fetchDeliverableContent(
-                                            deliverable.id
-                                          )
-                                        }
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                    </SheetTrigger>
-                                    <SheetContent side="left" className="">
-                                      <ScrollArea className="h-[calc(100vh-2rem)] pr-4">
-                                        <div className="space-y-6">
-                                          <Accordion
-                                            type="single"
-                                            collapsible
-                                            className="w-full"
-                                          >
-                                            <AccordionItem value="task-details">
-                                              <AccordionTrigger>
-                                                {task.title}
-                                              </AccordionTrigger>
-                                              <AccordionContent>
-                                                <div className="space-y-2">
-                                                  <p>
-                                                    <strong>
-                                                      Description:
-                                                    </strong>{" "}
-                                                    {task.description}
-                                                  </p>
-                                                  <p>
-                                                    <strong>Due Date:</strong>{" "}
-                                                    {task.due_date
-                                                      ? format(
-                                                          new Date(
-                                                            task.due_date
-                                                          ),
-                                                          "PPP"
-                                                        )
-                                                      : "N/A"}
-                                                  </p>
-                                                  <p>
-                                                    <strong>Priority:</strong>{" "}
-                                                    {task.priority}
-                                                  </p>
-                                                </div>
-                                              </AccordionContent>
-                                            </AccordionItem>
-                                            <AccordionItem value="deliverable-details">
-                                              <AccordionTrigger>
-                                                {deliverable.title}
-                                              </AccordionTrigger>
-                                              <AccordionContent>
-                                                <div className="space-y-2">
-                                                  <p>
-                                                    <strong>Status:</strong>{" "}
-                                                    {deliverable.status}
-                                                  </p>
-                                                  <p>
-                                                    <strong>Due Date:</strong>{" "}
-                                                    {deliverable.due_date
-                                                      ? format(
-                                                          new Date(
-                                                            deliverable.due_date
-                                                          ),
-                                                          "PPP"
-                                                        )
-                                                      : "N/A"}
-                                                  </p>
-                                                  <p>
-                                                    <strong>
-                                                      Description:
-                                                    </strong>{" "}
-                                                    {deliverable.description ||
-                                                      "N/A"}
-                                                  </p>
-                                                </div>
-                                              </AccordionContent>
-                                            </AccordionItem>
-                                          </Accordion>
-                                          <div>
-                                            <h3 className="text-lg font-semibold mb-2">
-                                              Deliverable Content
-                                            </h3>
-                                            {deliverableContentError[
-                                              deliverable.id
-                                            ] ? (
-                                              <p className="text-sm text-red-500">
-                                                Error loading content. Please
-                                                try again.
-                                              </p>
-                                            ) : deliverableContent[
-                                                deliverable.id
-                                              ] === null ? (
-                                              <p className="text-sm">
-                                                No content available for this
-                                                deliverable.
-                                              </p>
-                                            ) : (
-                                              <p className="text-sm">
-                                                {
-                                                  deliverableContent[
-                                                    deliverable.id
-                                                  ]?.content
-                                                }
-                                              </p>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </ScrollArea>
-                                    </SheetContent>
-                                  </Sheet>
+                                  <DeliverableContentSheet
+                                    task={task}
+                                    deliverable={deliverable}
+                                    onUpdate={handleUpdateDeliverable}
+                                  />
                                 </div>
                               </TableCell>
                             </TableRow>
