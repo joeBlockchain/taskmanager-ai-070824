@@ -54,7 +54,14 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { addDeliverable } from "@/components/kanban/actions";
-import { ScrollArea } from "../ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const supabase = createClient();
 
@@ -545,8 +552,8 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                       >
                                         <Trash className="h-4 w-4" />
                                       </Button>
-                                      <Popover>
-                                        <PopoverTrigger asChild>
+                                      <Sheet>
+                                        <SheetTrigger asChild>
                                           <Button
                                             size="sm"
                                             variant="outline"
@@ -558,38 +565,126 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                                           >
                                             <Paperclip className="h-4 w-4" />
                                           </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-80">
-                                          <div className="space-y-2">
-                                            <h4 className="font-medium">
-                                              Deliverable Content
-                                            </h4>
-                                            {deliverableContentError[
-                                              deliverable.id
-                                            ] ? (
-                                              <p className="text-sm text-red-500">
-                                                Error loading content. Please
-                                                try again.
-                                              </p>
-                                            ) : deliverableContent[
-                                                deliverable.id
-                                              ] === null ? (
-                                              <p className="text-sm">
-                                                No content available for this
-                                                deliverable.
-                                              </p>
-                                            ) : (
-                                              <p className="text-sm">
-                                                {
-                                                  deliverableContent[
+                                        </SheetTrigger>
+                                        <SheetContent
+                                          side="right"
+                                          className="w-[400px] sm:w-[540px]"
+                                        >
+                                          <ScrollArea className="h-[calc(100vh-2rem)] pr-4">
+                                            <div className="space-y-6">
+                                              <Accordion
+                                                type="single"
+                                                collapsible
+                                                className="w-full"
+                                              >
+                                                <AccordionItem value="task-details">
+                                                  <AccordionTrigger>
+                                                    Task Details
+                                                  </AccordionTrigger>
+                                                  <AccordionContent>
+                                                    <div className="space-y-2">
+                                                      <p>
+                                                        <strong>Title:</strong>{" "}
+                                                        {task.title}
+                                                      </p>
+                                                      <p>
+                                                        <strong>
+                                                          Description:
+                                                        </strong>{" "}
+                                                        {task.description}
+                                                      </p>
+                                                      <p>
+                                                        <strong>
+                                                          Due Date:
+                                                        </strong>{" "}
+                                                        {task.due_date
+                                                          ? format(
+                                                              new Date(
+                                                                task.due_date
+                                                              ),
+                                                              "PPP"
+                                                            )
+                                                          : "N/A"}
+                                                      </p>
+                                                      <p>
+                                                        <strong>
+                                                          Priority:
+                                                        </strong>{" "}
+                                                        {task.priority}
+                                                      </p>
+                                                    </div>
+                                                  </AccordionContent>
+                                                </AccordionItem>
+                                                <AccordionItem value="deliverable-details">
+                                                  <AccordionTrigger>
+                                                    Deliverable Details
+                                                  </AccordionTrigger>
+                                                  <AccordionContent>
+                                                    <div className="space-y-2">
+                                                      <p>
+                                                        <strong>Title:</strong>{" "}
+                                                        {deliverable.title}
+                                                      </p>
+                                                      <p>
+                                                        <strong>Status:</strong>{" "}
+                                                        {deliverable.status}
+                                                      </p>
+                                                      <p>
+                                                        <strong>
+                                                          Due Date:
+                                                        </strong>{" "}
+                                                        {deliverable.due_date
+                                                          ? format(
+                                                              new Date(
+                                                                deliverable.due_date
+                                                              ),
+                                                              "PPP"
+                                                            )
+                                                          : "N/A"}
+                                                      </p>
+                                                      <p>
+                                                        <strong>
+                                                          Description:
+                                                        </strong>{" "}
+                                                        {deliverable.description ||
+                                                          "N/A"}
+                                                      </p>
+                                                    </div>
+                                                  </AccordionContent>
+                                                </AccordionItem>
+                                              </Accordion>
+                                              <div>
+                                                <h3 className="text-lg font-semibold mb-2">
+                                                  Deliverable Content
+                                                </h3>
+                                                {deliverableContentError[
+                                                  deliverable.id
+                                                ] ? (
+                                                  <p className="text-sm text-red-500">
+                                                    Error loading content.
+                                                    Please try again.
+                                                  </p>
+                                                ) : deliverableContent[
                                                     deliverable.id
-                                                  ]?.content
-                                                }
-                                              </p>
-                                            )}
-                                          </div>
-                                        </PopoverContent>
-                                      </Popover>
+                                                  ] === null ? (
+                                                  <p className="text-sm">
+                                                    No content available for
+                                                    this deliverable.
+                                                  </p>
+                                                ) : (
+                                                  <p className="text-sm">
+                                                    {
+                                                      deliverableContent[
+                                                        deliverable.id
+                                                      ]?.content
+                                                    }
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </ScrollArea>
+                                        </SheetContent>
+                                      </Sheet>
                                     </div>
                                   </TableCell>
                                 </>
