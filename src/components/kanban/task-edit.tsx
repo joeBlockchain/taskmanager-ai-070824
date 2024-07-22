@@ -269,13 +269,15 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
           <PencilLine className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] m-0">
+      <DialogContent className="max-w-[90vw] max-h-[90vh] m-0">
         <DialogHeader className="">
           <ScrollArea className="h-[70vh]">
-            <DialogDescription>
+            <DialogDescription className="">
               <div className="space-y-4 px-[.2rem]">
-                <div className="grid items-center gap-1.5 ">
-                  <Label htmlFor="title">Title</Label>
+                <div className="grid items-center gap-1.5">
+                  <Label htmlFor="title" className="text-start">
+                    Title
+                  </Label>
                   <Input
                     id="title"
                     value={title}
@@ -283,7 +285,9 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                   />
                 </div>
                 <div className="grid items-center gap-1.5">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description" className="text-start">
+                    Description
+                  </Label>
                   <Textarea
                     id="description"
                     value={description}
@@ -291,7 +295,9 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                   />
                 </div>
                 <div className="grid items-center gap-1.5">
-                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Label htmlFor="dueDate" className="text-start">
+                    Due Date
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -320,7 +326,9 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                   </Popover>
                 </div>
                 <div className="grid items-center gap-1.5">
-                  <Label htmlFor="priority">Priority</Label>
+                  <Label htmlFor="priority" className="text-start">
+                    Priority
+                  </Label>
                   <Select value={priority} onValueChange={setPriority}>
                     <SelectTrigger id="priority">
                       <SelectValue placeholder="Select priority" />
@@ -334,8 +342,8 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                   </Select>
                 </div>
                 <div className="grid items-center gap-1.5">
-                  <Label>Deliverables</Label>
-                  <Card>
+                  <Label className="text-start">Deliverables</Label>
+                  {/* <Card>
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -693,19 +701,21 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
                         </Button>
                       </div>
                     )}
-                  </Card>
+                  </Card> */}
                 </div>
               </div>
             </DialogDescription>
           </ScrollArea>
         </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancelTaskEdit}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveTaskEdit} variant="secondary">
-            Save
-          </Button>
+        <DialogFooter className="">
+          <div className="flex flex-col gap-4">
+            <Button variant="outline" onClick={handleCancelTaskEdit}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTaskEdit} variant="secondary">
+              Save
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
