@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
@@ -48,7 +47,6 @@ import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -56,7 +54,7 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { addDeliverable } from "@/components/kanban/actions";
-import { ScrollArea, ScrollBar } from "../ui/scroll-area";
+import { ScrollArea } from "../ui/scroll-area";
 
 const supabase = createClient();
 
@@ -87,6 +85,13 @@ export default function TaskEdit({ task, setTasks }: TaskEditProps) {
   const [deliverableContentError, setDeliverableContentError] = useState<
     Record<string, boolean>
   >({});
+
+  useEffect(() => {
+    setTitle(task.title);
+    setDescription(task.description);
+    setDueDate(task.due_date ? new Date(task.due_date) : undefined);
+    setPriority(task.priority);
+  }, [task]);
 
   useEffect(() => {
     fetchDeliverables();
