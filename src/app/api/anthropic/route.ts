@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/utils/supabase/server";
+import { marked } from 'marked';
 
 export const runtime = "edge";
 
@@ -599,9 +600,10 @@ const tools: Tool[] = [
             if (!content) {
               return "Error: Content is required for create operation.";
             }
+            const htmlContent = marked(content); // Convert Markdown to HTML  
             const { data: createData, error: createError } = await supabase
               .from("deliverable_content")
-              .insert({ deliverable_id: deliverableId, content })
+              .insert({ deliverable_id: deliverableId, content: htmlContent })
               .select()
               .single();
   
@@ -613,9 +615,10 @@ const tools: Tool[] = [
             if (!content) {
               return "Error: Content is required for update operation.";
             }
+            const updateHtmlContent = marked(content); // Convert Markdown to HTML  
             const { data: updateData, error: updateError } = await supabase
               .from("deliverable_content")
-              .update({ content })
+              .update({ content: updateHtmlContent })
               .eq("deliverable_id", deliverableId)
               .select()
               .single();
