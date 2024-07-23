@@ -96,7 +96,13 @@ export default function Task({
         <>
           <div className="flex items-center gap-3">
             <AlignLeft className="h-4 w-4 flex-none" />
-            <p>{task.description || "-"}</p>
+            <p>
+              {task.description
+                ? task.description.length > 100
+                  ? `${task.description.substring(0, 100)}...`
+                  : task.description
+                : "-"}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Calendar className="h-4 w-4 flex-none" />

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil } from "lucide-react";
+import { Pencil, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import {
   Task,
@@ -33,15 +33,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import Tiptap from "@/components/editor/tiptap";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const supabase = createClient();
 
@@ -63,7 +62,6 @@ export function DeliverableContentSheet({
     useState<DeliverableContent | null>(null);
   const [deliverableContentError, setDeliverableContentError] =
     useState<boolean>(false);
-
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [contentToSave, setContentToSave] = useState<string>("");
 
@@ -257,171 +255,233 @@ export function DeliverableContentSheet({
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-6 py-4">
-            <Accordion
-              type="single"
-              collapsible
-              defaultValue="deliverable-details"
-              className="w-full"
-            >
-              <AccordionItem value="deliverable-details">
-                <AccordionTrigger>Deliverable Details</AccordionTrigger>
-                <AccordionContent className="bg-secondary/30 rounded-md p-2 mb-2  max-w-2xl">
-                  <div className="space-y-4">
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="title">Title</Label>
-                      <Input
-                        id="title"
-                        value={editedDeliverable.title}
-                        onChange={(e) =>
-                          setEditedDeliverable({
-                            ...editedDeliverable,
-                            title: e.target.value,
-                          })
+            <div className="md:flex md:space-x-4 space-y-4 md:space-y-0">
+              {/* Deliverable Details */}
+              <div className="w-full md:max-w-sm bg-secondary/30 rounded-md p-4">
+                <Collapsible className="md:hidden">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <h3 className="text-lg font-semibold">
+                      Deliverable Details
+                    </h3>
+                    <ChevronDown className="h-4 w-4" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <DeliverableDetailsContent
+                      editedDeliverable={editedDeliverable}
+                      setEditedDeliverable={setEditedDeliverable}
+                      handleSave={handleSave}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+                <div className="hidden md:block">
+                  <h3 className="text-lg font-semibold mb-2">
+                    Deliverable Details
+                  </h3>
+                  <DeliverableDetailsContent
+                    editedDeliverable={editedDeliverable}
+                    setEditedDeliverable={setEditedDeliverable}
+                    handleSave={handleSave}
+                  />
+                </div>
+              </div>
+
+              {/* Deliverable Content */}
+              <div className="md:flex w-full bg-secondary/30 rounded-md p-4">
+                <Collapsible className="md:hidden">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <h3 className="text-lg font-semibold">
+                      Deliverable Content
+                    </h3>
+                    <ChevronDown className="h-4 w-4" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <DeliverableContentSection
+                      isSaving={isSaving}
+                      deliverableContentError={deliverableContentError}
+                      deliverableContent={deliverableContent}
+                      handleContentChange={handleContentChange}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+                <div className="hidden md:block">
+                  <h3 className="text-lg font-semibold mb-2">
+                    Deliverable Content
+                    <div
+                      className={`flex flex-row space-x-3 items-start text-left transition-opacity duration-1000 ${
+                        isSaving ? "block opacity-100" : "hidden opacity-0"
+                      }`}
+                    >
+                      <span
+                        className="loader"
+                        style={
+                          {
+                            "--loader-size": "18px",
+                            "--loader-color": "#000",
+                            "--loader-color-dark": "#fff",
+                          } as React.CSSProperties
                         }
-                      />
+                      ></span>
+                      <span>Saving...</span>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={editedDeliverable.description}
-                        onChange={(e) =>
-                          setEditedDeliverable({
-                            ...editedDeliverable,
-                            description: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select
-                        value={
-                          editedDeliverable.status as
-                            | "Not Started"
-                            | "In Progress"
-                            | "Completed"
-                            | "Approved"
-                            | "Rejected"
-                        }
-                        onValueChange={(value) =>
-                          setEditedDeliverable({
-                            ...editedDeliverable,
-                            status: value as
-                              | "Not Started"
-                              | "In Progress"
-                              | "Completed"
-                              | "Approved"
-                              | "Rejected",
-                          })
-                        }
-                      >
-                        <SelectTrigger id="status">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Not Started">
-                            Not Started
-                          </SelectItem>
-                          <SelectItem value="In Progress">
-                            In Progress
-                          </SelectItem>
-                          <SelectItem value="Completed">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="dueDate">Due Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !editedDeliverable.due_date &&
-                                "text-muted-foreground"
-                            )}
-                          >
-                            {editedDeliverable.due_date ? (
-                              format(
-                                new Date(editedDeliverable.due_date),
-                                "PPP"
-                              )
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={
-                              editedDeliverable.due_date
-                                ? new Date(editedDeliverable.due_date)
-                                : undefined
-                            }
-                            onSelect={(date) =>
-                              setEditedDeliverable({
-                                ...editedDeliverable,
-                                due_date: date ? date.toISOString() : undefined,
-                              })
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button variant="secondary" onClick={handleSave}>
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="deliverable-content">
-                <AccordionTrigger>
-                  Deliverable Content{" "}
-                  <div
-                    className={`flex flex-row space-x-3 items-start text-left transition-opacity duration-1000 ${
-                      isSaving ? "opacity-100" : "opacity-0"
-                    }`}
-                  >
-                    <span
-                      className="loader"
-                      style={
-                        {
-                          "--loader-size": "18px",
-                          "--loader-color": "#000",
-                          "--loader-color-dark": "#fff",
-                        } as React.CSSProperties
-                      }
-                    ></span>
-                    <span>Saving...</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="bg-secondary/30 rounded-md p-2 mb-2">
-                  <div className="ml-4">
-                    {deliverableContentError ? (
-                      <p className="text-sm text-red-500">
-                        Error loading content. Please try again.
-                      </p>
-                    ) : (
-                      <Tiptap
-                        initialContent={
-                          deliverableContent?.content ||
-                          "<p>Start editing your content here...</p>"
-                        }
-                        onChange={handleContentChange}
-                      />
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                  </h3>
+                  <DeliverableContentSection
+                    isSaving={isSaving}
+                    deliverableContentError={deliverableContentError}
+                    deliverableContent={deliverableContent}
+                    handleContentChange={handleContentChange}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </ScrollArea>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function DeliverableDetailsContent({
+  editedDeliverable,
+  setEditedDeliverable,
+  handleSave,
+}: {
+  editedDeliverable: Deliverable;
+  setEditedDeliverable: (editedDeliverable: Deliverable) => void;
+  handleSave: () => void;
+}) {
+  return (
+    <div className="space-y-4 mt-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="title">Title</Label>
+        <Input
+          id="title"
+          value={editedDeliverable.title}
+          onChange={(e) =>
+            setEditedDeliverable({
+              ...editedDeliverable,
+              title: e.target.value,
+            })
+          }
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={editedDeliverable.description}
+          onChange={(e) =>
+            setEditedDeliverable({
+              ...editedDeliverable,
+              description: e.target.value,
+            })
+          }
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="status">Status</Label>
+        <Select
+          value={
+            editedDeliverable.status as
+              | "Not Started"
+              | "In Progress"
+              | "Completed"
+              | "Approved"
+              | "Rejected"
+          }
+          onValueChange={(value) =>
+            setEditedDeliverable({
+              ...editedDeliverable,
+              status: value as
+                | "Not Started"
+                | "In Progress"
+                | "Completed"
+                | "Approved"
+                | "Rejected",
+            })
+          }
+        >
+          <SelectTrigger id="status">
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Not Started">Not Started</SelectItem>
+            <SelectItem value="In Progress">In Progress</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="dueDate">Due Date</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !editedDeliverable.due_date && "text-muted-foreground"
+              )}
+            >
+              {editedDeliverable.due_date ? (
+                format(new Date(editedDeliverable.due_date), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={
+                editedDeliverable.due_date
+                  ? new Date(editedDeliverable.due_date)
+                  : undefined
+              }
+              onSelect={(date) =>
+                setEditedDeliverable({
+                  ...editedDeliverable,
+                  due_date: date ? date.toISOString() : undefined,
+                })
+              }
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div className="flex justify-end">
+        <Button variant="secondary" onClick={handleSave}>
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function DeliverableContentSection({
+  isSaving,
+  deliverableContentError,
+  deliverableContent,
+  handleContentChange,
+}: {
+  isSaving: boolean;
+  deliverableContentError: boolean;
+  deliverableContent: DeliverableContent | null;
+  handleContentChange: (content: string) => void;
+}) {
+  return (
+    <div className="">
+      {deliverableContentError ? (
+        <p className="text-sm text-red-500">
+          Error loading content. Please try again.
+        </p>
+      ) : (
+        <Tiptap
+          initialContent={
+            deliverableContent?.content ||
+            "<p>Start editing your content here...</p>"
+          }
+          onChange={handleContentChange}
+        />
+      )}
+    </div>
   );
 }

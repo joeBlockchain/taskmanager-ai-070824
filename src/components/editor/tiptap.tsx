@@ -1,4 +1,6 @@
-import React, { useCallback } from "react";
+"use client";
+
+import React, { useEffect, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
@@ -21,6 +23,12 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== initialContent) {
+      editor.commands.setContent(initialContent);
+    }
+  }, [editor, initialContent]);
 
   return <EditorContent editor={editor} />;
 };
