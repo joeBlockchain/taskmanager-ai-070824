@@ -65,7 +65,7 @@ export default function KanbanWrapper({
         <PopoverTrigger className="fixed bottom-4 right-4 h-14 w-14 rounded-full drop-shadow-xl border-primary/80 border flex items-center justify-center bg-background">
           <MessageSquare className="h-6 w-6" aria-hidden="true" />
         </PopoverTrigger>
-        <PopoverContent className="h-[calc(100vh-7rem)] w-[28rem]">
+        <PopoverContent className="h-[calc(100vh-7rem)] w-screen sm:w-[28rem]">
           <Chat projectId={projectId} />
         </PopoverContent>
       </Popover>
