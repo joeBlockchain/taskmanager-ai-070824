@@ -8,8 +8,7 @@ import {
   useEditor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Button } from "../ui/button";
-import { Toggle } from "../ui/toggle";
+import { Toggle } from "@/components/ui/toggle";
 import {
   Bold,
   Italic,
@@ -20,8 +19,12 @@ import {
   Heading1,
   Heading2,
   List,
+  Pilcrow,
+  Heading3,
+  ListOrdered,
 } from "lucide-react";
 import { CommandShortcut } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 import {
   Tooltip,
@@ -33,9 +36,14 @@ import {
 interface TiptapProps {
   initialContent: string;
   onChange: (content: string) => void;
+  className?: string;
 }
 
-const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
+const Tiptap: React.FC<TiptapProps> = ({
+  initialContent,
+  onChange,
+  className,
+}) => {
   const editor = useEditor({
     extensions: [StarterKit],
     content: initialContent,
@@ -44,8 +52,13 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
     },
     editorProps: {
       attributes: {
-        class:
+        class: cn(
           "prose prose-base prose-neutral dark:prose-invert focus:outline-none max-w-none",
+          "px-2 py-2",
+          "sm:px-3 sm:py-3",
+          "md:px-4 md:py-4",
+          className
+        ),
       },
     },
   });
@@ -65,6 +78,47 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
           editor={editor}
         >
           <TooltipProvider>
+            <Toggle
+              size="sm"
+              onClick={() => editor.chain().focus().setParagraph().run()}
+              pressed={editor.isActive("paragraph")}
+            >
+              <Pilcrow className="w-5 h-5" />
+            </Toggle>
+            <Toggle
+              size="sm"
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 1 }).run()
+              }
+              pressed={editor.isActive("heading", { level: 1 })}
+            >
+              <Heading1 className="w-5 h-5" />
+            </Toggle>
+            <Toggle
+              size="sm"
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run()
+              }
+              pressed={editor.isActive("heading", { level: 2 })}
+            >
+              <Heading2 className="w-5 h-5" />
+            </Toggle>
+            <Toggle
+              size="sm"
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 3 }).run()
+              }
+              pressed={editor.isActive("heading", { level: 3 })}
+            >
+              <Heading3 className="w-5 h-5" />
+            </Toggle>
+            <Toggle
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              pressed={editor.isActive("bulletList")}
+            >
+              <List className="w-5 h-5" />
+            </Toggle>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Toggle
@@ -72,7 +126,7 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
                   onClick={() => editor.chain().focus().toggleBold().run()}
                   pressed={editor.isActive("bold")}
                 >
-                  <Bold className="w-4 h-4" />
+                  <Bold className="w-5 h-5" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent className="flex flex-row gap-4 items-center">
@@ -87,7 +141,7 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
                   onClick={() => editor.chain().focus().toggleItalic().run()}
                   pressed={editor.isActive("italic")}
                 >
-                  <Italic className="w-4 h-4" />
+                  <Italic className="w-5 h-5" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent className="flex flex-row gap-4 items-center">
@@ -102,7 +156,7 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
                   onClick={() => editor.chain().focus().toggleStrike().run()}
                   pressed={editor.isActive("strike")}
                 >
-                  <Strikethrough className="w-4 h-4" />
+                  <Strikethrough className="w-5 h-5" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent className="flex flex-row gap-4 items-center">
@@ -119,7 +173,7 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
                   }
                   pressed={editor.isActive("horizontalRule")}
                 >
-                  <Minus className="w-4 h-4" />
+                  <Minus className="w-5 h-5" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent className="flex flex-row gap-4 items-center">
@@ -135,7 +189,7 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
                   onClick={() => editor.chain().focus().undo().run()}
                   disabled={!editor.can().chain().focus().undo().run()}
                 >
-                  <Undo className="w-4 h-4" />
+                  <Undo className="w-5 h-5" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent className="flex flex-row gap-4 items-center">
@@ -151,7 +205,7 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
                   onClick={() => editor.chain().focus().redo().run()}
                   disabled={!editor.can().chain().focus().redo().run()}
                 >
-                  <Redo className="w-4 h-4" />
+                  <Redo className="w-5 h-5" />
                 </Toggle>
               </TooltipTrigger>
               <TooltipContent className="flex flex-row gap-4 items-center">
@@ -165,10 +219,17 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
 
       {editor && (
         <FloatingMenu
-          className="floating-menu bg-background border border-border p-1 rounded-xl items-center"
+          className="floating-menu bg-background border border-border p-1 gap-1 rounded-xl items-center"
           tippyOptions={{ duration: 100 }}
           editor={editor}
         >
+          <Toggle
+            size="sm"
+            onClick={() => editor.chain().focus().setParagraph().run()}
+            pressed={editor.isActive("paragraph")}
+          >
+            <Pilcrow className="w-5 h-5" />
+          </Toggle>
           <Toggle
             size="sm"
             onClick={() =>
@@ -176,7 +237,7 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
             }
             pressed={editor.isActive("heading", { level: 1 })}
           >
-            <Heading1 className="w-4 h-4" />
+            <Heading1 className="w-5 h-5" />
           </Toggle>
           <Toggle
             size="sm"
@@ -185,14 +246,30 @@ const Tiptap: React.FC<TiptapProps> = ({ initialContent, onChange }) => {
             }
             pressed={editor.isActive("heading", { level: 2 })}
           >
-            <Heading2 className="w-4 h-4" />
+            <Heading2 className="w-5 h-5" />
+          </Toggle>
+          <Toggle
+            size="sm"
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
+            pressed={editor.isActive("heading", { level: 3 })}
+          >
+            <Heading3 className="w-5 h-5" />
           </Toggle>
           <Toggle
             size="sm"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             pressed={editor.isActive("bulletList")}
           >
-            <List className="w-4 h-4" />
+            <List className="w-5 h-5" />
+          </Toggle>
+          <Toggle
+            size="sm"
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            pressed={editor.isActive("orderedList")}
+          >
+            <ListOrdered className="w-5 h-5" />
           </Toggle>
         </FloatingMenu>
       )}

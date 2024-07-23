@@ -463,9 +463,6 @@ const tools: Tool[] = [
           .eq("id", taskId)
           .eq("user_id", userId)
           .single();
-
-        console.log("task", task);
-        console.log("taskError", taskError);
   
         if (taskError || !task) {
           return `Error: with "${taskId}". TaskError: ${JSON.stringify(taskError)}`;
