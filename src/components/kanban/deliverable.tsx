@@ -41,6 +41,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useToast } from "@/components/ui/use-toast";
 
 const supabase = createClient();
 
@@ -55,6 +56,7 @@ export function DeliverableContentSheet({
   deliverable,
   onUpdate,
 }: DeliverableContentSheetProps) {
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [editedDeliverable, setEditedDeliverable] =
     useState<Deliverable>(deliverable);
@@ -156,6 +158,10 @@ export function DeliverableContentSheet({
   };
 
   const handleSave = async () => {
+    toast({
+      title: "Saving deliverable",
+      description: "Please wait...",
+    });
     try {
       const { data, error } = await supabase
         .from("deliverables")
@@ -173,13 +179,26 @@ export function DeliverableContentSheet({
       if (error) throw error;
 
       onUpdate(data);
+
+      toast({
+        title: "Deliverable saved",
+        description: "Deliverable updated successfully",
+      });
       //   setIsOpen(false);
     } catch (error) {
+      toast({
+        title: "Error saving deliverable",
+        description: "Error saving deliverable",
+      });
       console.error("Error updating deliverable:", error);
     }
   };
 
   const saveContent = async (content: string) => {
+    toast({
+      title: "Saving deliverable content",
+      description: "Please wait...",
+    });
     setIsSaving(true);
     try {
       if (deliverableContent) {
@@ -208,7 +227,15 @@ export function DeliverableContentSheet({
         if (error) throw error;
         setDeliverableContent(data);
       }
+      toast({
+        title: "Deliverable content saved",
+        description: "Deliverable content updated successfully",
+      });
     } catch (error) {
+      toast({
+        title: "Error saving deliverable content",
+        description: "Error saving deliverable content",
+      });
       console.error("Error saving deliverable content:", error);
     } finally {
       setIsSaving(false);

@@ -67,6 +67,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { DeliverableContentSheet } from "@/components/kanban/deliverable";
+import { useToast } from "@/components/ui/use-toast";
 
 const supabase = createClient();
 
@@ -83,6 +84,7 @@ export default function TaskEdit({
   deliverables,
   setDeliverables,
 }: TaskEditProps) {
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
@@ -116,6 +118,10 @@ export default function TaskEdit({
   }, [task, deliverables]);
 
   const handleSaveTaskEdit = async () => {
+    toast({
+      title: "Saving task",
+      description: "Please wait...",
+    });
     try {
       const { deliverables, ...taskWithoutDeliverables } = task;
       const updatedTask = {
@@ -138,6 +144,11 @@ export default function TaskEdit({
       console.log("error", error);
 
       if (error) throw error;
+
+      toast({
+        title: "Task saved",
+        description: "Task updated successfully",
+      });
 
       setIsOpen(false);
     } catch (error) {
@@ -331,13 +342,13 @@ export default function TaskEdit({
                         <TableBody>
                           {taskDeliverables?.map((deliverable) => (
                             <TableRow key={deliverable.id}>
-                              <TableCell className="font-medium">
+                              <TableCell className="font-medium text-left">
                                 {deliverable.title}
                               </TableCell>
-                              <TableCell className="hidden xs:table-cell">
+                              <TableCell className="hidden xs:table-cell text-left">
                                 {deliverable.status}
                               </TableCell>
-                              <TableCell className="hidden xs:table-cell">
+                              <TableCell className="hidden xs:table-cell text-left">
                                 {deliverable.due_date
                                   ? format(
                                       new Date(deliverable.due_date),
@@ -345,7 +356,7 @@ export default function TaskEdit({
                                     )
                                   : "N/A"}
                               </TableCell>
-                              <TableCell className="hidden sm:table-cell">
+                              <TableCell className="hidden sm:table-cell text-left">
                                 {deliverable.description || "N/A"}
                               </TableCell>
                               <TableCell>
