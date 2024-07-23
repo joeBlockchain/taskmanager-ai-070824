@@ -176,7 +176,7 @@ export default function ProjectsPage() {
   return (
     <div className=" mx-auto">
       {isLoading ? (
-        <p className="flex flex-row space-x-3 items-center text-center">
+        <div className="flex flex-row space-x-3 items-center text-center">
           <span
             className="loader"
             style={
@@ -188,7 +188,7 @@ export default function ProjectsPage() {
             }
           ></span>
           <span>Loading...</span>
-        </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button

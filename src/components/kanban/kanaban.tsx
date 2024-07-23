@@ -273,7 +273,19 @@ export default function Kanban({ projectId }: KanbanProps) {
         </div>
       </div>
       {isLoading ? (
-        <p>Loading...</p>
+        <div className="flex flex-row space-x-3 items-center text-center">
+          <span
+            className="loader"
+            style={
+              {
+                "--loader-size": "18px",
+                "--loader-color": "#000",
+                "--loader-color-dark": "#fff",
+              } as React.CSSProperties
+            }
+          ></span>
+          <span>Loading...</span>
+        </div>
       ) : (
         <div className="w-full">
           {/* Tabs for small screens */}

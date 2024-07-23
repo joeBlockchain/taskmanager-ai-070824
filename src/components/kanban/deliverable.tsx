@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { debounce } from "lodash";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -40,6 +41,7 @@ import {
 } from "@/components/ui/accordion";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import Tiptap from "@/components/editor/tiptap";
 
 const supabase = createClient();
 
@@ -61,6 +63,9 @@ export function DeliverableContentSheet({
     useState<DeliverableContent | null>(null);
   const [deliverableContentError, setDeliverableContentError] =
     useState<boolean>(false);
+
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [contentToSave, setContentToSave] = useState<string>("");
 
   useEffect(() => {
     setEditedDeliverable(deliverable);
@@ -174,6 +179,56 @@ export function DeliverableContentSheet({
     } catch (error) {
       console.error("Error updating deliverable:", error);
     }
+  };
+
+  const saveContent = async (content: string) => {
+    setIsSaving(true);
+    try {
+      if (deliverableContent) {
+        const { data, error } = await supabase
+          .from("deliverable_content")
+          .update({
+            content: content,
+          })
+          .eq("id", deliverableContent.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        setDeliverableContent(data);
+      } else {
+        console.log("Inserting new content:", content);
+        const { data, error } = await supabase
+          .from("deliverable_content")
+          .insert({
+            deliverable_id: deliverable.id,
+            content: content,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setDeliverableContent(data);
+      }
+    } catch (error) {
+      console.error("Error saving deliverable content:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const debouncedSave = useCallback(
+    debounce((content: string) => saveContent(content), 2000),
+    []
+  );
+
+  const handleContentChange = (content: string) => {
+    setContentToSave(content);
+    debouncedSave(content);
+  };
+
+  const handleManualSave = () => {
+    saveContent(contentToSave);
   };
 
   return (
@@ -325,22 +380,40 @@ export function DeliverableContentSheet({
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="deliverable-content">
-                <AccordionTrigger>Deliverable Content</AccordionTrigger>
+                <AccordionTrigger>
+                  Deliverable Content{" "}
+                  <div
+                    className={`flex flex-row space-x-3 items-start text-left transition-opacity duration-1000 ${
+                      isSaving ? "opacity-100" : "opacity-0"
+                    }`}
+                  >
+                    <span
+                      className="loader"
+                      style={
+                        {
+                          "--loader-size": "18px",
+                          "--loader-color": "#000",
+                          "--loader-color-dark": "#fff",
+                        } as React.CSSProperties
+                      }
+                    ></span>
+                    <span>Saving...</span>
+                  </div>
+                </AccordionTrigger>
                 <AccordionContent className="bg-secondary/30 rounded-md p-2 mb-2">
                   <div className="ml-4">
-                    <h3 className="text-lg font-semibold mb-2">
-                      Deliverable Content
-                    </h3>
                     {deliverableContentError ? (
                       <p className="text-sm text-red-500">
                         Error loading content. Please try again.
                       </p>
-                    ) : deliverableContent === null ? (
-                      <p className="text-sm">
-                        No content available for this deliverable.
-                      </p>
                     ) : (
-                      <p className="text-sm">{deliverableContent.content}</p>
+                      <Tiptap
+                        initialContent={
+                          deliverableContent?.content ||
+                          "<p>Start editing your content here...</p>"
+                        }
+                        onChange={handleContentChange}
+                      />
                     )}
                   </div>
                 </AccordionContent>
