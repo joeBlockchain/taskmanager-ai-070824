@@ -278,7 +278,7 @@ export function DeliverableContentSheet({
           <SheetHeader>
             <SheetTitle className="text-left">Edit Deliverable</SheetTitle>
             <SheetDescription className="text-left">
-              Edit the deliverable details and content.
+              {deliverable.id}
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-6 py-4">

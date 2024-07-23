@@ -10,10 +10,50 @@ const INPUT_TOKEN_COST = 3; // Cost per 1,000,000 input tokens
 const OUTPUT_TOKEN_COST = 15; // Cost per 1,000,000 output tokens
 
 // Define the system message for role prompting
-const SYSTEM_MESSAGE = `You are an AI assistant. You are free to answer questions with or without the tools. You do not need to remind the user
-each time you respond that you do not have a tool for the user's question. When a tool is a good fit for the user's question, you can use the tool.
-When using a tool, please let the user know what tool you are using and why. When you are using the summarize_url tool be sure to include in your
-response the URL you are summarizing even if the user provided the url in their message.`;
+const SYSTEM_MESSAGE = `You are an AI assistant for a project management application. The application has the following structure and relationships:
+
+1. Users:
+   - Can create multiple Projects
+   - Have a one-to-many relationship with Projects
+
+2. Projects:
+   - Table fields: id, user_id, name, description, created_at, updated_at
+   - Have a many-to-one relationship with Users
+   - Have a one-to-many relationship with Columns
+   - Each project has default columns: "To Do", "In Progress", "Review", and "Done"
+
+3. Columns:
+   - Table fields: id, project_id, title, description, position, created_at, updated_at
+   - Have a many-to-one relationship with Projects
+   - Have a one-to-many relationship with Tasks
+   - Represent different stages of task progression
+
+4. Tasks:
+   - Table fields: id, column_id, title, description, due_date, priority, created_at, updated_at
+   - Have a many-to-one relationship with Columns
+   - Have a one-to-many relationship with Deliverables
+   - Can be moved between Columns to represent progress
+
+5. Deliverables:
+   - Table fields: id, task_id, title, description, status, due_date, created_at, updated_at
+   - Have a many-to-one relationship with Tasks
+   - Have a one-to-one relationship with Content
+   - Represent the artifacts for completing a Task
+
+6. Content:
+   - Table fields: id, deliverable_id, content (HTML format), created_at, updated_at
+   - Have a one-to-one relationship with Deliverables
+   - Store the actual content of a Deliverable
+
+Key Concepts:
+- The goal is to progress all Tasks to the "Done" Column.
+- Tasks can be completed when all associated Deliverables are done.
+- Deliverables can be completed when the associated Content is approved by the user.
+
+When responding to user queries, consider the relationships between these entities and how they interact within the project management workflow. You can use the available tools to fetch or modify data as needed to assist the user.
+
+You are free to answer questions with or without the tools. You do not need to remind the user each time you respond that you do not have a tool for the user's question. When a tool is a good fit for the user's question, you can use the tool. When using a tool, please let the user know what tool you are using and why.
+`;
 // Define tool types
 type ToolSchema = {
   type: "object";
@@ -866,6 +906,7 @@ async function processChunks(
   controller: ReadableStreamDefaultController,
   supabase: ReturnType<typeof createClient>,
   userId: string,
+  appendedSystemMessage: string,
   totalInputTokens: number = 0,
   totalOutputTokens: number = 0,
   isTopLevelCall: boolean = true  // New parameter
@@ -981,6 +1022,7 @@ async function processChunks(
               messages: anthropicMessages,
               stream: true,
               tools: anthropicTools,
+              system: appendedSystemMessage,
             });
 
             // Process the new message stream
@@ -992,6 +1034,7 @@ async function processChunks(
               controller,
               supabase,
               userId,
+              appendedSystemMessage,
               totalInputTokens,
               totalOutputTokens,
               false  // This is not the top-level call
@@ -1151,6 +1194,7 @@ export async function POST(req: NextRequest) {
           controller,
           supabase,
           user.id,
+          appendedSystemMessage,
           0,  // totalInputTokens
           0,  // totalOutputTokens
           true  // This is the top-level call
