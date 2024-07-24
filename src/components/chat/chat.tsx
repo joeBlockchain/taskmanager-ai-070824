@@ -165,7 +165,6 @@ export default function Chat({ projectId }: ChatProps) {
     formData.append("nestedData", JSON.stringify(nestedData));
     attachedFiles.forEach((file) => formData.append("files", file));
 
-    console.log("nestedData", nestedData);
     try {
       const res = await fetch("/api/anthropic", {
         method: "POST",

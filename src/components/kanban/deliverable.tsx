@@ -42,6 +42,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
+import { AIAssistButton } from "./ai-assist-button";
 
 const supabase = createClient();
 
@@ -217,7 +218,7 @@ export function DeliverableContentSheet({
         console.log("Inserting new content:", content);
         const { data, error } = await supabase
           .from("deliverable_content")
-          .insert({
+          .upsert({
             deliverable_id: deliverable.id,
             content: content,
           })
@@ -234,7 +235,7 @@ export function DeliverableContentSheet({
     } catch (error) {
       toast({
         title: "Error saving deliverable content",
-        description: "Error saving deliverable content",
+        description: "Error saving deliverable content" + error,
       });
       console.error("Error saving deliverable content:", error);
     } finally {
@@ -316,9 +317,15 @@ export function DeliverableContentSheet({
               <div className="md:flex w-full bg-secondary/30 rounded-md p-4">
                 <Collapsible className="md:hidden">
                   <CollapsibleTrigger className="flex items-center justify-between w-full">
-                    <h3 className="text-lg font-semibold">
-                      Deliverable Content
-                    </h3>
+                    <div className="flex flex-row items-center w-full">
+                      <h3 className="text-lg font-semibold">
+                        Deliverable Content
+                      </h3>
+                      <AIAssistButton
+                        deliverable={deliverable}
+                        deliverableContent={deliverableContent?.content || ""}
+                      />
+                    </div>
                     <ChevronDown className="h-4 w-4" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -333,6 +340,10 @@ export function DeliverableContentSheet({
                 <div className="hidden md:block">
                   <h3 className="text-lg font-semibold mb-2">
                     Deliverable Content
+                    <AIAssistButton
+                      deliverable={deliverable}
+                      deliverableContent={deliverableContent?.content || ""}
+                    />
                     <div
                       className={`flex flex-row space-x-3 items-start text-left transition-opacity duration-1000 ${
                         isSaving ? "block opacity-100" : "hidden opacity-0"
