@@ -118,12 +118,12 @@ export default function Task({
               <Badge
                 className={
                   task.priority === "urgent"
-                    ? "bg-red-700 text-red-200"
+                    ? "bg-red-100 text-red-700 dark:bg-red-7  00 dark:text-red-100"
                     : task.priority === "high"
-                    ? "bg-yellow-700 text-yellow-200"
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100"
                     : task.priority === "medium"
-                    ? "bg-green-700 text-green-200"
-                    : "bg-gray-700 text-gray-200"
+                    ? "bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100"
+                    : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
                 }
               >
                 {task.priority}

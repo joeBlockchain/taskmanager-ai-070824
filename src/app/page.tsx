@@ -1,6 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation"; // Import redirect function
 import { SiteHeader } from "@/components/site-header";
+import { Hero } from "@/components/ui/Landing/hero";
+import Chat from "@/components/chat/chat";
+import Kanban from "@/components/kanban/kanaban";
 
 export default async function Home() {
   const supabase = createClient();
@@ -16,11 +19,11 @@ export default async function Home() {
   }
 
   return (
-    <main>
+    <main className="mx-5">
       <nav className="">
         <SiteHeader />
       </nav>
-      your on the main page
+      <Hero />
     </main>
   );
 }

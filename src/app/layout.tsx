@@ -55,7 +55,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
+          "min-h-[calc(100dvh-4rem)] md:min-h[calc(100dvh-5rem)] bg-background font-sans antialiased",
           inter.className
         )}
       >

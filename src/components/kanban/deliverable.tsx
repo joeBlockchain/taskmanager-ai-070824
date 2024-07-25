@@ -201,6 +201,8 @@ export function DeliverableContentSheet({
       description: "Please wait...",
     });
     setIsSaving(true);
+    console.log("Saving deliverable content:", content);
+    console.log("Deliverable content:", deliverableContent);
     try {
       if (deliverableContent) {
         const { data, error } = await supabase
@@ -211,6 +213,9 @@ export function DeliverableContentSheet({
           .eq("id", deliverableContent.id)
           .select()
           .single();
+
+        console.log("Updated content:", data);
+        console.log("Error:", error);
 
         if (error) throw error;
         setDeliverableContent(data);
@@ -225,6 +230,9 @@ export function DeliverableContentSheet({
           .select()
           .single();
 
+        console.log("Inserted new content:", data);
+        console.log("Error:", error);
+
         if (error) throw error;
         setDeliverableContent(data);
       }
@@ -233,6 +241,7 @@ export function DeliverableContentSheet({
         description: "Deliverable content updated successfully",
       });
     } catch (error) {
+      console.log("Error saving deliverable content:", error);
       toast({
         title: "Error saving deliverable content",
         description: "Error saving deliverable content" + error,
