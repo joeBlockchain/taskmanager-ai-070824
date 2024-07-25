@@ -133,15 +133,10 @@ export default function TaskEdit({
         updated_at: new Date().toISOString(),
       };
 
-      console.log("updatedTask", updatedTask);
-
       const { data, error } = await supabase
         .from("tasks")
         .update(updatedTask)
         .eq("id", task.id);
-
-      console.log("data", data);
-      console.log("error", error);
 
       if (error) throw error;
 
@@ -220,9 +215,6 @@ export default function TaskEdit({
         status: "Not Started",
         due_date: new Date().toISOString(),
       });
-
-      console.log("data", data);
-      console.log("error", error);
     } catch (error) {
       console.error("Error adding deliverable:", error);
       // Handle error (e.g., show an error message to the user)

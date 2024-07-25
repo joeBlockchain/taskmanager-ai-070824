@@ -918,7 +918,7 @@ async function processChunks(
 
   try {
     for await (const chunk of stream) {
-      console.log("chunk", chunk);
+      console.log("chunks", chunk);
       if (chunk.type === "message_start") {
         totalInputTokens += chunk.message.usage.input_tokens;
         console.log(`Message start: input tokens = ${totalInputTokens}`);
@@ -932,7 +932,6 @@ async function processChunks(
         chunk.delta.type === "text_delta"
       ) {
         currentResponseText += chunk.delta.text;
-        console.log(`Text delta: ${chunk.delta.text}`);
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify(chunk.delta.text)}\n\n`)
         );
@@ -1074,10 +1073,6 @@ async function processChunks(
     const outputCost = (totalOutputTokens / 1_000_000) * OUTPUT_TOKEN_COST;
     const totalCost = inputCost + outputCost;
 
-    console.log(`Total input tokens: ${totalInputTokens}`);
-    console.log(`Total output tokens: ${totalOutputTokens}`);
-    console.log(`Total cost: ${totalCost}`);
-
     if (!isClosed) {
       try {
         await updateUserCost(supabase, userId, totalCost);
@@ -1087,6 +1082,8 @@ async function processChunks(
             `data: ${JSON.stringify({
               totalInputTokens,
               totalOutputTokens,
+              inputCost,
+              outputCost,
               totalCost,
             })}\n\n`
           )
@@ -1098,14 +1095,12 @@ async function processChunks(
       // Only send DONE message and close controller if this is the top-level call
       if (isTopLevelCall) {
         try {
-          console.log("Attempting to enqueue DONE message");
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         } catch (error) {
           console.error("Error enqueuing DONE message:", error);
         }
 
         try {
-          console.log("Attempting to close controller");
           controller.close();
           isClosed = true;
         } catch (closeError) {
@@ -1165,7 +1160,6 @@ export async function POST(req: NextRequest) {
     columns: nestedData,
   }, null, 2)}`;
 
-  console.log("appendedSystemMessage", appendedSystemMessage);
 
   // Prepare messages for Anthropic API
   const anthropicMessages = prepareAnthropicMessages(messages);

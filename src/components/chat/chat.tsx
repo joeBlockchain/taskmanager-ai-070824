@@ -41,6 +41,7 @@ interface Message {
   outputTokens?: number;
   inputCost?: number;
   outputCost?: number;
+  totalCost?: number;
 }
 
 interface CodeBlockProps {
@@ -114,11 +115,10 @@ export default function Chat({ projectId }: ChatProps) {
   };
 
   const totalChatCost = useMemo(() => {
-    return messages.reduce((total, message) => {
-      const messageCost =
-        (Number(message.inputCost) || 0) + (Number(message.outputCost) || 0);
-      return total + messageCost;
-    }, 0);
+    return messages.reduce(
+      (total, message) => total + (message.totalCost || 0),
+      0
+    );
   }, [messages]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -193,6 +193,14 @@ export default function Chat({ projectId }: ChatProps) {
       }
 
       let aiResponse = "";
+      let accumulatedCost = {
+        inputTokens: 0,
+        outputTokens: 0,
+        inputCost: 0,
+        outputCost: 0,
+        totalCost: 0,
+      };
+
       setMessages((prevMessages) => [
         ...prevMessages,
         { role: "assistant", content: "" },
@@ -216,6 +224,7 @@ export default function Chat({ projectId }: ChatProps) {
             }
             try {
               const parsedData = JSON.parse(data);
+
               if (typeof parsedData === "string") {
                 aiResponse += parsedData;
                 setToolCallInProgress(false);
@@ -225,17 +234,23 @@ export default function Chat({ projectId }: ChatProps) {
               } else if (parsedData.type === "tool_payload") {
                 aiResponse += `${parsedData.payload}`;
                 // Keep toolCallInProgress true here
-              } else if (parsedData.inputTokens && parsedData.outputTokens) {
+              } else if (parsedData.totalCost !== undefined) {
+                // Accumulate costs
+                accumulatedCost.inputTokens += parsedData.totalInputTokens;
+                accumulatedCost.outputTokens += parsedData.totalOutputTokens;
+                accumulatedCost.inputCost += parsedData.inputCost;
+                accumulatedCost.outputCost += parsedData.outputCost;
+                accumulatedCost.totalCost += parsedData.totalCost;
+
                 setMessages((prevMessages) => {
                   const updatedMessages = [...prevMessages];
-                  updatedMessages[updatedMessages.length - 1].inputTokens =
-                    parsedData.inputTokens;
-                  updatedMessages[updatedMessages.length - 1].outputTokens =
-                    parsedData.outputTokens;
-                  updatedMessages[updatedMessages.length - 1].inputCost =
-                    parsedData.inputCost;
-                  updatedMessages[updatedMessages.length - 1].outputCost =
-                    parsedData.outputCost;
+                  const lastMessage =
+                    updatedMessages[updatedMessages.length - 1];
+                  lastMessage.inputTokens = accumulatedCost.inputTokens;
+                  lastMessage.outputTokens = accumulatedCost.outputTokens;
+                  lastMessage.inputCost = accumulatedCost.inputCost;
+                  lastMessage.outputCost = accumulatedCost.outputCost;
+                  lastMessage.totalCost = accumulatedCost.totalCost;
                   return updatedMessages;
                 });
                 setToolCallInProgress(false);
