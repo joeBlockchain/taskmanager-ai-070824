@@ -201,50 +201,31 @@ export function DeliverableContentSheet({
       description: "Please wait...",
     });
     setIsSaving(true);
-    console.log("Saving deliverable content:", content);
-    console.log("Deliverable content:", deliverableContent);
     try {
-      if (deliverableContent) {
-        const { data, error } = await supabase
-          .from("deliverable_content")
-          .update({
-            content: content,
-          })
-          .eq("id", deliverableContent.id)
-          .select()
-          .single();
-
-        console.log("Updated content:", data);
-        console.log("Error:", error);
-
-        if (error) throw error;
-        setDeliverableContent(data);
-      } else {
-        console.log("Inserting new content:", content);
-        const { data, error } = await supabase
-          .from("deliverable_content")
-          .upsert({
+      const { data, error } = await supabase
+        .from("deliverable_content")
+        .upsert(
+          {
             deliverable_id: deliverable.id,
             content: content,
-          })
-          .select()
-          .single();
+          },
+          { onConflict: "deliverable_id" }
+        )
+        .select();
 
-        console.log("Inserted new content:", data);
-        console.log("Error:", error);
+      if (error) throw error;
 
-        if (error) throw error;
-        setDeliverableContent(data);
-      }
+      setDeliverableContent(data[0] as DeliverableContent);
+
       toast({
         title: "Deliverable content saved",
         description: "Deliverable content updated successfully",
       });
     } catch (error) {
-      console.log("Error saving deliverable content:", error);
       toast({
         title: "Error saving deliverable content",
-        description: "Error saving deliverable content" + error,
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
       });
       console.error("Error saving deliverable content:", error);
     } finally {
