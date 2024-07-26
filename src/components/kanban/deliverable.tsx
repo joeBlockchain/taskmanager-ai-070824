@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
 import { AIAssistButton } from "./ai-assist-button";
+import TimelineStepper from "../ui/stepper";
 
 const supabase = createClient();
 
@@ -377,6 +378,26 @@ function DeliverableDetailsContent({
   setEditedDeliverable: (editedDeliverable: Deliverable) => void;
   handleSave: () => void;
 }) {
+  const statusSteps = [
+    "Not Started",
+    "In Progress",
+    "Completed",
+    "Approved",
+    "Rejected",
+  ];
+
+  const handleStepClick = (stepIndex: number) => {
+    setEditedDeliverable({
+      ...editedDeliverable,
+      status: statusSteps[stepIndex] as
+        | "Not Started"
+        | "In Progress"
+        | "Completed"
+        | "Approved"
+        | "Rejected",
+    });
+  };
+
   return (
     <div className="space-y-4 mt-4">
       <div className="flex flex-col gap-2">
@@ -407,36 +428,11 @@ function DeliverableDetailsContent({
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="status">Status</Label>
-        <Select
-          value={
-            editedDeliverable.status as
-              | "Not Started"
-              | "In Progress"
-              | "Completed"
-              | "Approved"
-              | "Rejected"
-          }
-          onValueChange={(value) =>
-            setEditedDeliverable({
-              ...editedDeliverable,
-              status: value as
-                | "Not Started"
-                | "In Progress"
-                | "Completed"
-                | "Approved"
-                | "Rejected",
-            })
-          }
-        >
-          <SelectTrigger id="status">
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Not Started">Not Started</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+        <TimelineStepper
+          steps={statusSteps}
+          currentStep={statusSteps.indexOf(editedDeliverable.status)}
+          onStepClick={handleStepClick}
+        />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="dueDate">Due Date</Label>
