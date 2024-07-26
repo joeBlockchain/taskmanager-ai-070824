@@ -6,8 +6,8 @@ import { marked } from 'marked';
 export const runtime = "edge";
 
 // Define cost constants
-const INPUT_TOKEN_COST = 3; // Cost per 1,000,000 input tokens
-const OUTPUT_TOKEN_COST = 15; // Cost per 1,000,000 output tokens
+const INPUT_TOKEN_COST = 3; // .25;  // Cost per 1,000,000 input tokens
+const OUTPUT_TOKEN_COST = 15; // 1.25; // Cost per 1,000,000 output tokens
 
 // Define the system message for role prompting
 const SYSTEM_MESSAGE = `You are an AI assistant for a project management application. The application has the following structure and relationships:
@@ -1016,6 +1016,7 @@ async function processChunks(
 
             // Create a new message to process the tool result
             const toolResultResponse = await anthropic.messages.create({
+              //model: "claude-3-haiku-20240307",
               model: "claude-3-5-sonnet-20240620",
               max_tokens: 1000,
               messages: anthropicMessages,
@@ -1164,9 +1165,13 @@ export async function POST(req: NextRequest) {
   // Prepare messages for Anthropic API
   const anthropicMessages = prepareAnthropicMessages(messages);
 
+  console.log("anthropicMessages", anthropicMessages);
+  console.log("anthropicTools", anthropicTools);
+  console.log("appendedSystemMessage", appendedSystemMessage);
 
   const stream = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20240620",
+    //model: "claude-3-haiku-20240307",
+   model: "claude-3-5-sonnet-20240620",
     max_tokens: 3000,
     temperature: 0,
     messages: anthropicMessages,

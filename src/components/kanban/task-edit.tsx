@@ -262,52 +262,100 @@ export default function TaskEdit({
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
-                <div className="grid items-center gap-1.5">
-                  <Label htmlFor="dueDate" className="text-start">
-                    Due Date
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !dueDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dueDate ? (
-                          format(dueDate, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={dueDate}
-                        onSelect={setDueDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="grid items-center gap-1.5">
-                  <Label htmlFor="priority" className="text-start">
-                    Priority
-                  </Label>
-                  <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger id="priority">
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-row gap-4">
+                  <div className="grid items-center gap-1.5 w-1/2">
+                    <Label htmlFor="dueDate" className="text-start">
+                      Due Date
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !dueDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dueDate ? (
+                            format(dueDate, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={dueDate}
+                          onSelect={setDueDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="grid items-center gap-1.5 w-1/2">
+                    <Label htmlFor="priority" className="text-start">
+                      Priority
+                    </Label>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span
+                          className="cursor-pointer"
+                          onClick={() => setPriority("low")}
+                        >
+                          Low
+                        </span>
+                        <span
+                          className="cursor-pointer"
+                          onClick={() => setPriority("medium")}
+                        >
+                          Medium
+                        </span>
+                        <span
+                          className="cursor-pointer"
+                          onClick={() => setPriority("high")}
+                        >
+                          High
+                        </span>
+                        <span
+                          className="cursor-pointer"
+                          onClick={() => setPriority("urgent")}
+                        >
+                          Urgent
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <div
+                          className="w-full h-2 bg-gray-200 rounded-full cursor-pointer"
+                          onClick={(e) => {
+                            const rect =
+                              e.currentTarget.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const percentage = x / rect.width;
+                            if (percentage <= 0.25) setPriority("low");
+                            else if (percentage <= 0.5) setPriority("medium");
+                            else if (percentage <= 0.75) setPriority("high");
+                            else setPriority("urgent");
+                          }}
+                        >
+                          <div
+                            className={`h-full rounded-full ${
+                              priority === "low"
+                                ? "w-1/4 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                                : priority === "medium"
+                                ? "w-1/2 bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100"
+                                : priority === "high"
+                                ? "w-3/4 bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100"
+                                : priority === "urgent"
+                                ? "w-full bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100"
+                                : "w-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="grid items-center gap-1.5">
                   <Label className="text-start">Deliverables</Label>

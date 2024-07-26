@@ -85,6 +85,30 @@ export async function moveTask(
   }
 }
 
+export async function updateTaskPriority(
+  taskId: string,
+  newPriority: string,
+  setTasks: React.Dispatch<React.SetStateAction<TaskType[]>>
+) {
+  try {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ priority: newPriority })
+      .eq("id", taskId);
+
+    if (error) throw error;
+
+    // Optimistically update the UI
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? { ...task, priority: newPriority } : task
+      )
+    );
+  } catch (error) {
+    console.error("Error updating task priority:", error);
+  }
+}
+
 export async function deleteColumn(
   columnId: string,
   setColumns: React.Dispatch<React.SetStateAction<ColumnType[]>>,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { updateTaskPriority } from "./actions";
 import {
   Card,
   CardContent,
@@ -62,6 +63,10 @@ export default function Task({
   const prevColumn = columns[currentColumnIndex - 1];
   const nextColumn = columns[currentColumnIndex + 1];
 
+  const handlePriorityChange = async (newPriority: string) => {
+    await updateTaskPriority(task.id, newPriority, setTasks);
+  };
+
   return (
     <Card key={task.id} className="relative group p-0 m-0">
       <Button
@@ -112,25 +117,65 @@ export default function Task({
                 : "-"}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-row items-center gap-3 w-full">
             <Flag className="h-4 w-4 flex-none" />
-            {task.priority ? (
-              <Badge
-                className={
-                  task.priority === "urgent"
-                    ? "bg-red-100 text-red-700 dark:bg-red-7  00 dark:text-red-100"
-                    : task.priority === "high"
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100"
-                    : task.priority === "medium"
-                    ? "bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
-                }
-              >
-                {task.priority}
-              </Badge>
-            ) : (
-              <div>-</div>
-            )}
+
+            <div className="flex flex-col space-y-2 w-full">
+              <div className="flex justify-between text-xs w-full">
+                <span
+                  className="cursor-pointer"
+                  onClick={() => handlePriorityChange("low")}
+                >
+                  Low
+                </span>
+                <span
+                  className="cursor-pointer"
+                  onClick={() => handlePriorityChange("medium")}
+                >
+                  Medium
+                </span>
+                <span
+                  className="cursor-pointer"
+                  onClick={() => handlePriorityChange("high")}
+                >
+                  High
+                </span>
+                <span
+                  className="cursor-pointer"
+                  onClick={() => handlePriorityChange("urgent")}
+                >
+                  Urgent
+                </span>
+              </div>
+              <div className="relative">
+                <div
+                  className="w-full h-2 bg-gray-200 rounded-full cursor-pointer"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = x / rect.width;
+                    if (percentage <= 0.25) handlePriorityChange("low");
+                    else if (percentage <= 0.5) handlePriorityChange("medium");
+                    else if (percentage <= 0.75) handlePriorityChange("high");
+                    else handlePriorityChange("urgent");
+                  }}
+                >
+                  <div
+                    className={`h-full rounded-full ${
+                      task.priority === "low"
+                        ? "w-1/4 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                        : task.priority === "medium"
+                        ? "w-1/2 bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100"
+                        : task.priority === "high"
+                        ? "w-3/4 bg-blue-100 text-blue-700 dark:bg-blue-700 dark:text-blue-100"
+                        : task.priority === "urgent"
+                        ? "w-full bg-red-100 text-red-700 dark:bg-red-700 dark:text-red-100"
+                        : "w-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </>
       </CardContent>
