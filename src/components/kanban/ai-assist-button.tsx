@@ -33,6 +33,15 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { PenSquare } from "lucide-react";
 
 const supabase = createClient();
 
@@ -49,6 +58,9 @@ export function AIAssistButton({
   const [aiResponse, setAiResponse] = useState("");
   const [showResponse, setShowResponse] = useState(false);
   const [hasContent, setHasContent] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [isCustomPromptOpen, setIsCustomPromptOpen] = useState(false);
+
   const { toast } = useToast();
 
   const { columns, tasks, deliverables } = useContext(KanbanContext);
@@ -68,7 +80,13 @@ export function AIAssistButton({
     return () => clearTimeout(timer);
   }, [showResponse, isLoading]);
 
-  const handleAIAssist = async (action: string) => {
+  const handleCustomPromptSubmit = () => {
+    handleAIAssist("custom", customPrompt);
+    setIsCustomPromptOpen(false);
+    setCustomPrompt("");
+  };
+
+  const handleAIAssist = async (action: string, customPrompt: string = "") => {
     setIsLoading(true);
     setShowResponse(true);
     setAiResponse("");
@@ -88,6 +106,13 @@ export function AIAssistButton({
 
       let prompt = "";
       switch (action) {
+        case "custom":
+          prompt = `Please help with the deliverable titled: "${deliverable.title}". 
+          The current description is: "${deliverable.description}". 
+          The current content is: "${deliverableContent}".
+          Custom request: ${customPrompt}`;
+          break;
+        default:
         case "complete":
           prompt = `Please complete the deliverable titled: "${deliverable.title}". 
           The current description is: "${deliverable.description}". 
@@ -148,11 +173,6 @@ export function AIAssistButton({
           The current content is: "${deliverableContent}".
           Please provide the content with a more friendly tone.`;
           break;
-        default:
-          prompt = `Please help with the deliverable titled: "${deliverable.title}". 
-          The current description is: "${deliverable.description}". 
-          The current content is: "${deliverableContent}".
-          Please provide suggestions or improvements for this deliverable.`;
       }
 
       const formData = new FormData();
@@ -334,8 +354,29 @@ export function AIAssistButton({
               </DropdownMenuSub>
             </>
           )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setIsCustomPromptOpen(true)}>
+            <PenSquare className="mr-3 h-5 w-5" strokeWidth={1.5} />
+            Custom Prompt
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog open={isCustomPromptOpen} onOpenChange={setIsCustomPromptOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Custom AI Prompt</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            placeholder="Enter your custom prompt here..."
+          />
+          <DialogFooter>
+            <Button onClick={handleCustomPromptSubmit}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {showResponse && (
         <div
           className="fixed bottom-4 right-4 bg-background border border-border p-4 rounded-lg shadow-lg max-w-md max-h-screen overflow-auto text-base sm:text-sm"
