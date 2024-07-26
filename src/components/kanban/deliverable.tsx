@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
 import { AIAssistButton } from "./ai-assist-button";
-import TimelineStepper from "../ui/stepper";
+import { Progress } from "../ui/progress";
 
 const supabase = createClient();
 
@@ -378,28 +378,69 @@ function DeliverableDetailsContent({
   setEditedDeliverable: (editedDeliverable: Deliverable) => void;
   handleSave: () => void;
 }) {
-  const statusSteps = [
-    "Not Started",
-    "In Progress",
-    "Completed",
-    "Approved",
-    "Rejected",
-  ];
-
-  const handleStepClick = (stepIndex: number) => {
-    setEditedDeliverable({
-      ...editedDeliverable,
-      status: statusSteps[stepIndex] as
-        | "Not Started"
-        | "In Progress"
-        | "Completed"
-        | "Approved"
-        | "Rejected",
-    });
-  };
-
   return (
     <div className="space-y-4 mt-4">
+      <div className="flex flex-col gap-4 pb-4">
+        <Label htmlFor="status" className="text-start">
+          Status
+        </Label>
+        <div className="flex flex-col space-y-2">
+          <div className="flex justify-between text-xs">
+            <Button
+              variant={
+                editedDeliverable.status === "Not Started" ? "default" : "ghost"
+              }
+              onClick={() =>
+                setEditedDeliverable({
+                  ...editedDeliverable,
+                  status: "Not Started",
+                })
+              }
+              className="m-0 py-0 px-4 h-fit"
+            >
+              Not Started
+            </Button>
+            <Button
+              variant={
+                editedDeliverable.status === "In Progress" ? "default" : "ghost"
+              }
+              onClick={() =>
+                setEditedDeliverable({
+                  ...editedDeliverable,
+                  status: "In Progress",
+                })
+              }
+              className="m-0 py-0 px-4 h-fit"
+            >
+              In Progress
+            </Button>
+            <Button
+              variant={
+                editedDeliverable.status === "Completed" ? "default" : "ghost"
+              }
+              onClick={() =>
+                setEditedDeliverable({
+                  ...editedDeliverable,
+                  status: "Completed",
+                })
+              }
+              className="m-0 py-0 px-4 h-fit"
+            >
+              Completed
+            </Button>
+          </div>
+          <Progress
+            value={
+              editedDeliverable.status === "Not Started"
+                ? 10
+                : editedDeliverable.status === "In Progress"
+                ? 50
+                : 100
+            }
+            className="w-full h-2"
+          />
+        </div>
+      </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="title">Title</Label>
         <Input
@@ -424,14 +465,6 @@ function DeliverableDetailsContent({
               description: e.target.value,
             })
           }
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="status">Status</Label>
-        <TimelineStepper
-          steps={statusSteps}
-          currentStep={statusSteps.indexOf(editedDeliverable.status)}
-          onStepClick={handleStepClick}
         />
       </div>
       <div className="flex flex-col gap-2">

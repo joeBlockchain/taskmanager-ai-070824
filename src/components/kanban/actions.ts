@@ -3,6 +3,7 @@ import {
   Column as ColumnType,
   Task as TaskType,
   Deliverable as DeliverableType,
+  DeliverableStatus
 } from "@/components/kanban/types";
 
 const supabase = createClient();
@@ -106,6 +107,35 @@ export async function updateTaskPriority(
     );
   } catch (error) {
     console.error("Error updating task priority:", error);
+  }
+}
+
+export async function updateDeliverableStatus(
+  deliverableId: string,
+  newStatus: string,
+  setDeliverables: React.Dispatch<React.SetStateAction<DeliverableType[]>>
+) {
+  try {
+    const { data, error } = await supabase
+      .from("deliverables")
+      .update({ status: newStatus })
+      .eq("id", deliverableId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Optimistically update the UI
+    setDeliverables((prevDeliverables) =>
+      prevDeliverables.map((deliverable) =>
+        deliverable.id === deliverableId ? { ...deliverable, status: newStatus as DeliverableStatus } : deliverable
+      )
+    );
+
+    return data;
+  } catch (error) {
+    console.error("Error updating deliverable status:", error);
+    return null;
   }
 }
 

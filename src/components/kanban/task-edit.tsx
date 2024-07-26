@@ -68,6 +68,8 @@ import {
 } from "@/components/ui/accordion";
 import { DeliverableContentSheet } from "@/components/kanban/deliverable";
 import { useToast } from "@/components/ui/use-toast";
+import { Badge } from "../ui/badge";
+import { Progress } from "../ui/progress";
 
 const supabase = createClient();
 
@@ -229,6 +231,50 @@ export default function TaskEdit({
     );
   };
 
+  const statusOrder = ["Not Started", "In Progress", "Completed"];
+
+  const cycleStatus = (deliverable: DeliverableType) => {
+    const currentIndex = statusOrder.indexOf(
+      deliverable.status as "Not Started" | "In Progress" | "Completed"
+    );
+    const nextIndex = (currentIndex + 1) % statusOrder.length;
+    const newStatus = statusOrder[nextIndex] as
+      | "Not Started"
+      | "In Progress"
+      | "Completed";
+    setDeliverables((prevDeliverables) =>
+      prevDeliverables.map((d) =>
+        d.id === deliverable.id ? { ...d, status: newStatus } : d
+      )
+    );
+  };
+
+  const getProgressValue = (status: string) => {
+    switch (status) {
+      case "Not Started":
+        return 10;
+      case "In Progress":
+        return 50;
+      case "Completed":
+        return 100;
+      default:
+        return 0;
+    }
+  };
+
+  const handleDeliverableDueDateChange = (
+    deliverableId: string,
+    date: Date | undefined
+  ) => {
+    setDeliverables((prevDeliverables) =>
+      prevDeliverables.map((d) =>
+        d.id === deliverableId
+          ? { ...d, due_date: date ? date.toISOString() : undefined }
+          : d
+      )
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -236,7 +282,6 @@ export default function TaskEdit({
           <PencilLine className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      {/* CONTAINTER THAT THE CARD WITH THE DIV CANNOT BE BIGGER THAN THE DIALOGCONTENT */}
       <DialogContent className="max-w-lg sm:max-w-2xl md:max-w-3xl max-h-[90vh] m-0 py-4 px-2">
         <ScrollArea className="h-[70vh]">
           <DialogHeader className="px-4 py-2">
@@ -359,7 +404,6 @@ export default function TaskEdit({
                 </div>
                 <div className="grid items-center gap-1.5">
                   <Label className="text-start">Deliverables</Label>
-                  {/* CARD MUST CONSTRAIN TABLE CONTENT AND CANNOT GROW BIGGER THAN DIALOGCONTENT */}
                   <Card className="">
                     <div className="overflow-x-auto">
                       <Table className="w-full">
@@ -385,16 +429,66 @@ export default function TaskEdit({
                               <TableCell className="font-medium text-left">
                                 {deliverable.title}
                               </TableCell>
-                              <TableCell className="hidden xs:table-cell text-left">
-                                {deliverable.status}
+                              <TableCell className="hidden xs:table-cell">
+                                <div className="flex flex-col items-center space-y-3">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs w-fit whitespace-nowrap cursor-pointer"
+                                    onClick={() => cycleStatus(deliverable)}
+                                  >
+                                    <p className="text-center">
+                                      {deliverable.status}
+                                    </p>
+                                  </Badge>
+                                  <Progress
+                                    value={getProgressValue(deliverable.status)}
+                                    className="w-full h-1"
+                                  />
+                                </div>
                               </TableCell>
                               <TableCell className="hidden xs:table-cell text-left">
-                                {deliverable.due_date
-                                  ? format(
-                                      new Date(deliverable.due_date),
-                                      "PPP"
-                                    )
-                                  : "N/A"}
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      className={cn(
+                                        "justify-start text-left font-normal mx-0 px-2 w-fit",
+                                        !deliverable.due_date &&
+                                          "text-muted-foreground"
+                                      )}
+                                    >
+                                      <CalendarIcon className="mr-2 h-4 w-4 flex-none" />
+                                      {deliverable.due_date ? (
+                                        format(
+                                          new Date(deliverable.due_date),
+                                          "PPP"
+                                        )
+                                      ) : (
+                                        <span>Pick a date</span>
+                                      )}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-auto p-0"
+                                    align="start"
+                                  >
+                                    <Calendar
+                                      mode="single"
+                                      selected={
+                                        deliverable.due_date
+                                          ? new Date(deliverable.due_date)
+                                          : undefined
+                                      }
+                                      onSelect={(date) =>
+                                        handleDeliverableDueDateChange(
+                                          deliverable.id,
+                                          date
+                                        )
+                                      }
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
                               </TableCell>
                               <TableCell className="hidden sm:table-cell text-left">
                                 {deliverable.description || "N/A"}

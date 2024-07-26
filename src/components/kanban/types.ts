@@ -49,6 +49,8 @@ export interface Task {
     is_archived: boolean;
   }
 
+  export type DeliverableStatus = 'Not Started' | 'In Progress' | 'Completed' | 'Approved' | 'Rejected';  
+
   export interface DeliverableContent {
     id: string;
     deliverable_id: string;
