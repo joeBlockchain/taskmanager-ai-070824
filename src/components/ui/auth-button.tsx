@@ -57,8 +57,8 @@ export default async function AuthButton({
   // Calculate the API cost progress
   const apiCost =
     profiles && profiles[0]?.api_cost_chat ? profiles[0].api_cost_chat : 0;
-  const progressPercentage = (apiCost / 15) * 100; // 5 represents 100%
-  const displayValue = Math.round((progressPercentage / 100) * 1500); // Convert to a value out of 500
+  const progressPercentage = (apiCost / 5) * 100; // 5 represents 100%
+  const displayValue = Math.round((progressPercentage / 100) * 500); // Convert to a value out of 500
 
   console.log(progressPercentage);
 
