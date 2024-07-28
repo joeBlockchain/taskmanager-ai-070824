@@ -91,7 +91,10 @@ export default async function Home() {
                 management and boosting productivity
               </p>
               <Link href="/how-to-get-started" className="inline-block mt-4">
-                <Button variant="outline" size="lg">
+                <Button
+                  variant="secondary"
+                  className="w-40 text-lg h-12 lg:h-14 lg:rounded-lg lg:text-xl"
+                >
                   Read the Guide
                 </Button>
               </Link>

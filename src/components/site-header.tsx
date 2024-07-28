@@ -13,7 +13,9 @@ export function SiteHeader() {
           prefetch={false}
         >
           <SquareCheckBig className="h-6 w-6" />
-          <span className="ml-4 font-semibold text-lg">TaskManager-AI</span>
+          <span className="ml-4 font-semibold text-base sm:text-lg">
+            TaskManager-AI
+          </span>
         </Link>
         <div className="flex flex-1 items-center space-x-2 justify-end">
           <nav className="flex items-center gap-2">
