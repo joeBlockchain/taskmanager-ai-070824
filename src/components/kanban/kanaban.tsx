@@ -22,6 +22,7 @@ import { KanbanContext } from "@/components/kanban/kanban-wrapper";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 interface KanbanProps {
   projectId: string;
@@ -38,7 +39,9 @@ export default function Kanban({ projectId }: KanbanProps) {
     setDeliverables,
   } = useContext(KanbanContext);
   const [project, setProject] = useState<Project | null>(null);
-
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState(project?.name);
+  const [newDescription, setNewDescription] = useState(project?.description);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
 
@@ -256,6 +259,23 @@ export default function Kanban({ projectId }: KanbanProps) {
 
   const columnPairs = groupColumnPairs(columns);
 
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ name: newName })
+        .eq("id", projectId);
+
+      console.log("Error updating project name:", error);
+
+      if (error) throw error;
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating project name:", error);
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-row items-center justify-between my-4">
@@ -267,9 +287,26 @@ export default function Kanban({ projectId }: KanbanProps) {
             <ArrowLeft className="h-4 w-4" />
             <span>All Projects</span>
           </Link>
-          <h1 className="text-2xl font-bold text-center">
-            {project ? project.name : "Loading..."}
-          </h1>
+          {isEditing ? (
+            <div className="flex items-center space-x-2">
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="text-2xl font-bold"
+              />
+              <Button onClick={handleSave}>Save</Button>
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <h1
+              className="text-2xl font-bold text-center cursor-pointer hover:underline"
+              onClick={() => setIsEditing(true)}
+            >
+              {project?.name}
+            </h1>
+          )}
         </div>
       </div>
       {isLoading ? (

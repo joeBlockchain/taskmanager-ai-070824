@@ -10,6 +10,9 @@ import heroImageSm from "../../public/hero-img-sm.png";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/ui/Landing/footer";
+import createContent from "../../public/create-content.gif";
 
 export default async function Home() {
   const supabase = createClient();
@@ -49,7 +52,7 @@ export default async function Home() {
         />
       </div>
 
-      <section className="w-full py-16">
+      <section className="w-full py-16 md:py-20 lg:py-24">
         <div className="container px-4 md:px-6 border border-border p-12 rounded-xl">
           <div className="flex flex-col items-center text-center">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-6">
@@ -76,37 +79,43 @@ export default async function Home() {
           </div>
         </div>
       </section>
-      <footer className="w-full py-6 bg-background">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-4 md:mb-0">
-              <p className="text-sm text-muted-foreground">
-                © 2024 TaskManager-AI. All rights reserved.
+      <section className="w-full justify-center items-center  py-16 md:py-20 lg:py-24">
+        <div className="container max-w-6xl px-4 md:px-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between">
+            <div className="max-w-md space-y-4 lg:pr-8">
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+                How to Get Started with TaskManager-AI
+              </h1>
+              <p className="text-muted-foreground md:text-xl/relaxed">
+                Your comprehensive guide to mastering AI-powered project
+                management and boosting productivity
               </p>
+              <Link href="/how-to-get-started" className="inline-block mt-4">
+                <Button variant="outline" size="lg">
+                  Read the Guide
+                </Button>
+              </Link>
             </div>
-            <nav className="flex space-x-4">
-              <Link
-                href="/privacy-policy"
-                className="text-sm text-muted-foreground hover:text-primary"
+            <figure className="mt-8 lg:mt-0">
+              <Image
+                src={createContent}
+                alt="TaskManager-AI Guide"
+                width={600}
+                height={500}
+                className="rounded-lg shadow-md border border-gray-200"
+              />
+              <figcaption
+                id="caption"
+                className="text-center text-muted-foreground"
               >
-                Privacy Policy
-              </Link>
-              <Link
-                href="/terms-of-service"
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                href="/contact"
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
-                Contact Us
-              </Link>
-            </nav>
+                You can create a task by clicking the Add Task button.
+              </figcaption>
+            </figure>
           </div>
         </div>
-      </footer>
+      </section>
+      <section className="w-full py-16 md:py-20 lg:py-24"></section>
+      <Footer />
     </main>
   );
 }

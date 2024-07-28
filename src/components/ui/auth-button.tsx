@@ -64,7 +64,7 @@ export default async function AuthButton({
 
   return user ? (
     <div className="flex items-center gap-4">
-      <Popover>
+      {/* <Popover>
         <PopoverTrigger>
           <Button
             variant="outline"
@@ -85,7 +85,7 @@ export default async function AuthButton({
           <br />
           Type in a few more AI tasks to see where we can improve!
         </PopoverContent>
-      </Popover>
+      </Popover> */}
       <ModeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild className="w-full">

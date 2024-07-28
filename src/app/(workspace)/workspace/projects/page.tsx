@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-
+import { ExternalLink } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -36,9 +36,6 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
   const supabase = createClient();
 
   useEffect(() => {
@@ -134,27 +131,6 @@ export default function ProjectsPage() {
     }
   }
 
-  async function updateProject(projectId: string) {
-    try {
-      const { error } = await supabase
-        .from("projects")
-        .update({ name: editName, description: editDescription })
-        .eq("id", projectId);
-
-      if (error) throw error;
-      setProjects((prevProjects) =>
-        prevProjects.map((project) =>
-          project.id === projectId
-            ? { ...project, name: editName, description: editDescription }
-            : project
-        )
-      );
-      setEditingProjectId(null);
-    } catch (error) {
-      console.error("Error updating project:", error);
-    }
-  }
-
   function handleProjectChange(payload: any) {
     const { eventType, new: newProject, old: oldProject } = payload;
     setProjects((prevProjects) => {
@@ -203,88 +179,41 @@ export default function ProjectsPage() {
               key={project.id}
               className="cursor-pointer hover:shadow-lg transition-shadow relative group"
             >
-              {editingProjectId === project.id ? (
-                <div className="p-4">
-                  <div className="grid items-center gap-1.5">
-                    <Label htmlFor="name" className="text-muted-foreground">
-                      Project Name
-                    </Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid items-center gap-1.5">
-                    <Label
-                      htmlFor="description"
-                      className="text-muted-foreground"
-                    >
-                      Project Description
-                    </Label>
-                    <Textarea
-                      id="description"
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2 mt-2">
+              <>
+                <div className="absolute hidden group-hover:flex w-[1.5rem] -right-[.5rem] top-[.5rem]">
+                  <div className="flex flex-col space-y-1">
                     <Button
-                      variant="secondary"
-                      className="px-2 m-0 h-[2rem]"
-                      onClick={() => updateProject(project.id)}
+                      variant="outline"
+                      className="w-[2rem] h-[2rem] p-0 m-0"
+                      asChild
                     >
-                      <Check className="h-4 w-4 mr-2" /> Save
+                      <Link href={`/workspace/projects/board/${project.id}`}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
                     </Button>
                     <Button
-                      variant="destructive"
-                      className="px-2 m-0 h-[2rem]"
-                      onClick={() => setEditingProjectId(null)}
+                      variant="outline"
+                      className="w-[2rem] h-[2rem] p-0 m-0"
+                      onClick={() => deleteProject(project.id)}
                     >
-                      <X className="h-4 w-4 mr-2" /> Cancel
+                      <TrashIcon className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-              ) : (
-                <>
-                  <div className="absolute hidden group-hover:flex w-[1.5rem] -right-[.5rem] top-[.5rem]">
-                    <div className="flex flex-col space-y-1">
-                      <Button
-                        variant="outline"
-                        className="w-[2rem] h-[2rem] p-0 m-0"
-                        onClick={() => {
-                          setEditingProjectId(project.id);
-                          setEditName(project.name);
-                          setEditDescription(project.description);
-                        }}
-                      >
-                        <PencilLine className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-[2rem] h-[2rem] p-0 m-0"
-                        onClick={() => deleteProject(project.id)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <Link href={`/workspace/projects/board/${project.id}`}>
-                    <CardHeader>
-                      <CardTitle>{project.name}</CardTitle>
-                      <CardDescription>
-                        Created:{" "}
-                        {new Date(project.created_at).toLocaleDateString()}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>{project.description}</CardContent>
-                    {/* <CardFooter className="flex justify-end">
+                <Link href={`/workspace/projects/board/${project.id}`}>
+                  <CardHeader>
+                    <CardTitle>{project.name}</CardTitle>
+                    <CardDescription>
+                      Created:{" "}
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>{project.description}</CardContent>
+                  {/* <CardFooter className="flex justify-end">
                       
                     </CardFooter> */}
-                  </Link>
-                </>
-              )}
+                </Link>
+              </>
             </Card>
           ))}
         </div>

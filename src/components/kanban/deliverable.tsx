@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import Tiptap from "@/components/editor/tiptap";
+import TipTapEditor from "@/components/editor/tiptap-editor";
 import {
   Collapsible,
   CollapsibleContent,
@@ -531,7 +531,7 @@ function DeliverableContentSection({
           Error loading content. Please try again.
         </p>
       ) : (
-        <Tiptap
+        <TipTapEditor
           initialContent={
             deliverableContent?.content ||
             "<p>Start editing your content here...</p>"
