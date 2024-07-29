@@ -35,9 +35,11 @@ const SYSTEM_MESSAGE = `You are an AI assistant for a project management applica
    - Can be moved between Columns to represent progress
 
 5. Deliverables:
-   - Table fields: id, task_id, title, description, status, due_date, created_at, updated_at
+   - Table fields: id, task_id, title, description, status, due_date, created_at, updated_at, dependency_deliverable_id
    - Have a many-to-one relationship with Tasks
    - Have a one-to-one relationship with Content
+   - Have a one-to-one relationship with other Deliverables (dependency_deliverable_id) where this Deliverable is dependent on the other Deliverable
+   - Populating a dependency deliverable id is CRUCIAL and CRITICAL to the System it is RARE for a Deliverable not to have a dependency
    - Represent the artifacts for completing a Task
 
 6. Content:
@@ -188,7 +190,7 @@ const tools: Tool[] = [
   },
   {
     name: "add_tasks",
-    description: "Adds one or multiple tasks to a column. Use this for adding any number of tasks, including just one task.",
+    description: "Adds one or multiple tasks to a column. Use this for adding any number of tasks, including just one task. Ensures that deliverables have dependencies set.",
     schema: {
       type: "object",
       properties: {
@@ -257,45 +259,64 @@ const tools: Tool[] = [
       console.log(`Adding multiple tasks to column: ${columnId}`);
       try {
         const supabase = createClient();
-
+  
         // Fetch available columns
         const { data: columns, error: columnsError } = await supabase
           .from("columns")
           .select("id, title")
           .eq("user_id", userId);
-
+  
         if (columnsError) throw columnsError;
-
+  
         // Check if the specified columnId exists
         const columnExists = columns.some(column => column.id === columnId);
         if (!columnExists) {
           return `Error: Column with ID "${columnId}" does not exist. Available columns: ${JSON.stringify(columns)}`;
         }
-
+  
         for (const task of tasks) {
           const { title, description, due_date, priority, deliverables } = task;
-
+  
           // Add the task
           const { data: taskData, error: taskError } = await supabase
             .from("tasks")
             .insert({ title, column_id: columnId, user_id: userId, description, due_date, priority })
             .select();
-
+  
           if (taskError) throw taskError;
-
+  
           const taskId = taskData[0].id;
-
+  
           // Add deliverables if provided
           if (deliverables && deliverables.length > 0) {
-            const deliverableData = deliverables.map(deliverable => ({ ...deliverable, task_id: taskId, user_id: userId }));
-            const { error: deliverableError } = await supabase
-              .from("deliverables")
-              .insert(deliverableData);
-
-            if (deliverableError) throw deliverableError;
+            let previousDeliverableId: string | null = null;
+            for (const deliverable of deliverables) {
+              const deliverableToInsert: {
+                title: string;
+                description?: string;
+                due_date?: string;
+                status: string;
+                task_id: string;
+                user_id: string;
+                dependency_deliverable_id: string | null;
+              } = {
+                ...deliverable,
+                task_id: taskId,
+                user_id: userId,
+                dependency_deliverable_id: previousDeliverableId
+              };
+              const { data: insertedDeliverable, error: deliverableError } = await supabase
+                .from("deliverables")
+                .insert(deliverableToInsert)
+                .select();
+  
+              if (deliverableError) throw deliverableError;
+  
+              previousDeliverableId = insertedDeliverable[0].id;
+            }
           }
         }
-
+  
         console.log("Tasks and deliverables added successfully");
         return `Tasks added successfully to column "${columnId}". Available columns: ${JSON.stringify(columns)}`;
       } catch (error) {
@@ -476,6 +497,10 @@ const tools: Tool[] = [
                     enum: ["Not Started", "In Progress", "Completed", "Approved", "Rejected"],
                     description: "The status of the deliverable.",
                   },
+                  dependency_deliverable_id: {
+                    type: "string",
+                    description: "The ID of the deliverable that this deliverable depends on (optional).",
+                  },
                 },
                 required: ["title", "status"],
               },
@@ -527,7 +552,6 @@ const tools: Tool[] = [
                 console.error("Deliverable ID is required for update operation");
                 continue;
               }
-              console.log("deliverable", deliverable);
               const { error: updateError } = await supabase
                 .from("deliverables")
                 .update(deliverable)
@@ -629,6 +653,7 @@ const tools: Tool[] = [
           .single();
   
         if (deliverableError || !deliverable) {
+          console.log("deliverableError", deliverableError);
           return `Error: Deliverable with ID "${deliverableId}" not found or doesn't belong to the user.`;
         }
   
@@ -640,11 +665,14 @@ const tools: Tool[] = [
             const htmlContent = marked(content); // Convert Markdown to HTML  
             const { data: createData, error: createError } = await supabase
               .from("deliverable_content")
-              .insert({ deliverable_id: deliverableId, content: htmlContent })
+              .upsert({ deliverable_id: deliverableId, content: htmlContent }, { onConflict: "deliverable_id" })
               .select()
               .single();
   
-            if (createError) throw createError;
+            if (createError) {
+              console.error("Error creating content:", createError);
+              throw createError;
+            }
             console.log(`Created content for deliverable ${deliverableId}`);
             return `Content created successfully for deliverable ${deliverableId}. Content ID: ${createData.id}`;
   
@@ -655,8 +683,7 @@ const tools: Tool[] = [
             const updateHtmlContent = marked(content); // Convert Markdown to HTML  
             const { data: updateData, error: updateError } = await supabase
               .from("deliverable_content")
-              .update({ content: updateHtmlContent })
-              .eq("deliverable_id", deliverableId)
+              .upsert({ deliverable_id: deliverableId, content: updateHtmlContent }, { onConflict: "deliverable_id" })
               .select()
               .single();
   
@@ -909,7 +936,8 @@ async function processChunks(
   appendedSystemMessage: string,
   totalInputTokens: number = 0,
   totalOutputTokens: number = 0,
-  isTopLevelCall: boolean = true  // New parameter
+  isTopLevelCall: boolean = true,  // New parameter
+  enableTools: boolean = true  // New parameter
 ) {
   let isClosed = false;
   let currentToolUse: any = null;
@@ -1037,7 +1065,8 @@ async function processChunks(
               appendedSystemMessage,
               totalInputTokens,
               totalOutputTokens,
-              false  // This is not the top-level call
+              false,  // This is not the top-level call
+              enableTools
             );
           }
 
@@ -1147,9 +1176,10 @@ export async function POST(req: NextRequest) {
   const projectId = formData.get("projectId") as string;
   const nestedData = JSON.parse(formData.get("nestedData") as string);
   const files = formData.getAll("files") as File[];
+  const deliverableId = formData.get("deliverableId") as string;
+  const enableTools = formData.get("enableTools") !== "false";  // Default to true
+  const toolChoice = formData.get("toolChoice"); 
 
-  console.log("projectId", projectId);
-  console.log("nestedData", nestedData);
 
   const fileContent = await processFiles(files);
   const lastUserMessage = messages[messages.length - 1];
@@ -1159,24 +1189,33 @@ export async function POST(req: NextRequest) {
   const appendedSystemMessage = `${SYSTEM_MESSAGE}\n\nProject Data:\n${JSON.stringify({
     projectId,
     columns: nestedData,
+    deliverableId,
   }, null, 2)}`;
 
 
   // Prepare messages for Anthropic API
   const anthropicMessages = prepareAnthropicMessages(messages);
 
+  console.log("projectId", projectId);
+  console.log("deliverableId", deliverableId);
+  console.log("nestedData", nestedData);
   console.log("anthropicMessages", anthropicMessages);
   console.log("anthropicTools", anthropicTools);
-  console.log("appendedSystemMessage", appendedSystemMessage);
+  console.log("appendedSystemMessages", appendedSystemMessage);
+  console.log("enableTools", enableTools);
+  console.log("toolChoice", toolChoice);
+  
+  
 
   const stream = await anthropic.messages.create({
     //model: "claude-3-haiku-20240307",
-   model: "claude-3-5-sonnet-20240620",
+    model: "claude-3-5-sonnet-20240620",
     max_tokens: 3000,
     temperature: 0,
     messages: anthropicMessages,
     stream: true,
-    tools: anthropicTools,
+    tools: enableTools ? anthropicTools : undefined,
+    tool_choice: toolChoice ? JSON.parse(toolChoice as string) : undefined,
     system: appendedSystemMessage,
   });
 
@@ -1196,7 +1235,8 @@ export async function POST(req: NextRequest) {
           appendedSystemMessage,
           0,  // totalInputTokens
           0,  // totalOutputTokens
-          true  // This is the top-level call
+          true,  // This is the top-level call
+          enableTools
         );
       } catch (error) {
         console.error("Error in stream processing:", error);

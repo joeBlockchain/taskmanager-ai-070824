@@ -47,6 +47,7 @@ export interface Task {
     created_at: string;
     updated_at: string;
     is_archived: boolean;
+    dependency_deliverable_id?: string | null;
   }
 
   export type DeliverableStatus = 'Not Started' | 'In Progress' | 'Completed' | 'Approved' | 'Rejected';  
@@ -57,6 +58,7 @@ export interface Task {
     content: string;
     created_at: string;
     updated_at: string;
+    api_cost_chat: number;
   }
 
   export interface DeliverableContentVersion {

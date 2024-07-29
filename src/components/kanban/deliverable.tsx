@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, ChevronDown } from "lucide-react";
+import { Pencil, ChevronDown, ExternalLink, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import {
   Task,
@@ -43,7 +43,9 @@ import {
 } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
 import { AIAssistButton } from "./ai-assist-button";
-import { Progress } from "../ui/progress";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const supabase = createClient();
 
@@ -68,6 +70,7 @@ export function DeliverableContentSheet({
     useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [contentToSave, setContentToSave] = useState<string>("");
+  const [dependencyCompleted, setDependencyCompleted] = useState<boolean>(true);
 
   useEffect(() => {
     setEditedDeliverable(deliverable);
@@ -76,6 +79,8 @@ export function DeliverableContentSheet({
   useEffect(() => {
     if (isOpen) {
       fetchDeliverableContent();
+      checkDependencyStatus();
+
       const subscription = supabase
         .channel(`deliverable-${deliverable.id}`)
         .on(
@@ -172,6 +177,8 @@ export function DeliverableContentSheet({
           description: editedDeliverable.description,
           status: editedDeliverable.status,
           due_date: editedDeliverable.due_date,
+          dependency_deliverable_id:
+            editedDeliverable.dependency_deliverable_id,
           updated_at: new Date().toISOString(),
         })
         .eq("id", deliverable.id)
@@ -248,6 +255,59 @@ export function DeliverableContentSheet({
     saveContent(contentToSave);
   };
 
+  const checkDependencyStatus = async () => {
+    if (editedDeliverable.dependency_deliverable_id) {
+      // Change this line
+      const { data, error } = await supabase
+        .from("deliverables")
+        .select("status")
+        .eq("id", editedDeliverable.dependency_deliverable_id) // And this line
+        .single();
+
+      if (error) {
+        console.error("Error fetching dependency status:", error);
+        setDependencyCompleted(false);
+      } else {
+        setDependencyCompleted(data.status === "Completed");
+      }
+    } else {
+      setDependencyCompleted(true);
+    }
+  };
+
+  // Add this useEffect to recheck dependency status when editedDeliverable change
+  useEffect(() => {
+    checkDependencyStatus();
+  }, [editedDeliverable.dependency_deliverable_id]);
+
+  const handleRemoveDependency = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("deliverables")
+        .update({ dependency_deliverable_id: null })
+        .eq("id", deliverable.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setEditedDeliverable(data);
+      onUpdate(data);
+      setDependencyCompleted(true);
+      toast({
+        title: "Dependency removed",
+        description: "The dependency has been removed successfully.",
+      });
+    } catch (error) {
+      console.error("Error removing dependency:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove the dependency. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
@@ -292,7 +352,7 @@ export function DeliverableContentSheet({
                     />
                   </CollapsibleContent>
                 </Collapsible>
-                <div className="hidden md:block">
+                <div className="hidden md:block w-full">
                   <h3 className="text-lg font-semibold mb-2">
                     Deliverable Details
                   </h3>
@@ -320,45 +380,67 @@ export function DeliverableContentSheet({
                     <ChevronDown className="h-4 w-4" />
                   </CollapsibleTrigger>
                   <CollapsibleContent>
+                    {dependencyCompleted ? (
+                      <DeliverableContentSection
+                        isSaving={isSaving}
+                        deliverableContentError={deliverableContentError}
+                        deliverableContent={deliverableContent}
+                        handleContentChange={handleContentChange}
+                      />
+                    ) : (
+                      <DependencyWarning
+                        deliverable={deliverable}
+                        onRemoveDependency={handleRemoveDependency}
+                      />
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+                <div className="hidden md:block">
+                  <div className="flex flex-row items-center w-full justify-between">
+                    <h3 className="flex flex-row items-center text-lg font-semibold mb-2">
+                      <p className="flex-none mr-2">Deliverable Content</p>
+                      <AIAssistButton
+                        deliverable={deliverable}
+                        deliverableContent={deliverableContent?.content || ""}
+                      />
+                      <div
+                        className={`flex flex-row space-x-3 items-start text-left transition-opacity duration-1000 ${
+                          isSaving ? "block opacity-100" : "hidden opacity-0"
+                        }`}
+                      >
+                        <span
+                          className="loader"
+                          style={
+                            {
+                              "--loader-size": "18px",
+                              "--loader-color": "#000",
+                              "--loader-color-dark": "#fff",
+                            } as React.CSSProperties
+                          }
+                        ></span>
+                        <span>Saving...</span>
+                      </div>
+                    </h3>
+                  </div>
+                  {dependencyCompleted ? (
                     <DeliverableContentSection
                       isSaving={isSaving}
                       deliverableContentError={deliverableContentError}
                       deliverableContent={deliverableContent}
                       handleContentChange={handleContentChange}
                     />
-                  </CollapsibleContent>
-                </Collapsible>
-                <div className="hidden md:block">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Deliverable Content
-                    <AIAssistButton
+                  ) : (
+                    <DependencyWarning
                       deliverable={deliverable}
-                      deliverableContent={deliverableContent?.content || ""}
+                      onRemoveDependency={handleRemoveDependency}
                     />
-                    <div
-                      className={`flex flex-row space-x-3 items-start text-left transition-opacity duration-1000 ${
-                        isSaving ? "block opacity-100" : "hidden opacity-0"
-                      }`}
-                    >
-                      <span
-                        className="loader"
-                        style={
-                          {
-                            "--loader-size": "18px",
-                            "--loader-color": "#000",
-                            "--loader-color-dark": "#fff",
-                          } as React.CSSProperties
-                        }
-                      ></span>
-                      <span>Saving...</span>
-                    </div>
-                  </h3>
-                  <DeliverableContentSection
-                    isSaving={isSaving}
-                    deliverableContentError={deliverableContentError}
-                    deliverableContent={deliverableContent}
-                    handleContentChange={handleContentChange}
-                  />
+                  )}
+                  <div className="flex flex-row items-center mt-10">
+                    <p className="text-muted-foreground text-xsxt-xs">
+                      Accumulated AI Cost: $
+                      {deliverableContent?.api_cost_chat.toFixed(4)}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -378,8 +460,80 @@ function DeliverableDetailsContent({
   setEditedDeliverable: (editedDeliverable: Deliverable) => void;
   handleSave: () => void;
 }) {
+  const [otherDeliverables, setOtherDeliverables] = useState<Deliverable[]>([]);
+
+  useEffect(() => {
+    const fetchOtherDeliverables = async () => {
+      const { data, error } = await supabase
+        .from("deliverables")
+        .select("*")
+        .eq("task_id", editedDeliverable.task_id)
+        .neq("id", editedDeliverable.id);
+
+      if (error) {
+        console.error("Error fetching other deliverables:", error);
+      } else {
+        setOtherDeliverables(data);
+      }
+    };
+
+    isDependencyIncomplete();
+
+    fetchOtherDeliverables();
+  }, [editedDeliverable.task_id, editedDeliverable.id]);
+
+  const isDependencyIncomplete = (): boolean => {
+    // If there is no dependency deliverable ID, it's considered complete (no yellow outline)
+    if (!editedDeliverable.dependency_deliverable_id) {
+      return false;
+    }
+
+    // Find the dependency deliverable from the list of other deliverables
+    const dependencyDeliverable = otherDeliverables.find(
+      (del) => del.id === editedDeliverable.dependency_deliverable_id
+    );
+
+    // Check if the dependency deliverable is either not found or not completed
+    return (
+      !dependencyDeliverable || dependencyDeliverable.status !== "Completed"
+    );
+  };
+
   return (
     <div className="space-y-4 mt-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="dependencyDeliverableId">Deliverable Dependency</Label>
+        <Select
+          value={editedDeliverable.dependency_deliverable_id || "none"}
+          onValueChange={(value) =>
+            setEditedDeliverable({
+              ...editedDeliverable,
+              dependency_deliverable_id: value !== "none" ? value : null,
+            })
+          }
+        >
+          <SelectTrigger
+            className={cn(
+              isDependencyIncomplete() && "border-yellow-500 border-2"
+            )}
+          >
+            <SelectValue placeholder="Select a dependency" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No Dependency</SelectItem>
+            {otherDeliverables.map((del) => (
+              <SelectItem
+                key={del.id}
+                value={del.id}
+                className="flex flex-row w-full items-center justify-between"
+              >
+                <span className="mr-4">{del.title}</span>
+                <Badge variant="default">{del.status}</Badge>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="flex flex-col gap-4 pb-4">
         <Label htmlFor="status" className="text-start">
           Status
@@ -539,6 +693,33 @@ function DeliverableContentSection({
           onChange={handleContentChange}
         />
       )}
+    </div>
+  );
+}
+
+function DependencyWarning({
+  deliverable,
+  onRemoveDependency,
+}: {
+  deliverable: Deliverable;
+  onRemoveDependency: () => void;
+}) {
+  return (
+    <div className="w-full">
+      <div className="mx-auto my-10 max-w-2xl bg-amber-100/50 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 rounded-lg">
+        <div className="flex items-center">
+          <AlertTriangle className="h-6 w-6 mr-2" />
+          <p className="font-bold">Dependency Not Completed</p>
+        </div>
+        <p className="mt-2">
+          The dependency deliverable for this item has not been completed yet.
+          You need to complete the previous deliverable dependency or remove the
+          dependency to proceed.
+        </p>
+        <Button variant="outline" className="mt-4" onClick={onRemoveDependency}>
+          Remove Dependency
+        </Button>
+      </div>
     </div>
   );
 }
